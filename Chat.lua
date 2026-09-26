@@ -308,3 +308,32 @@ Hush:AddSlashCommand("clearfake", function()
     end
     Hush:Print("Removed", n, "fake conversations.")
 end, "remove test conversations")
+
+Hush:AddSlashCommand("fakeconvo", function(arg)
+    local name = arg ~= "" and arg or "Sigrid"
+    local key = Data.WhisperKey(name)
+    local conv = Data.Ensure(key, { kind = "whisper", target = name, display = name,
+        info = { class = "PRIEST", level = 42, zone = "Stranglethorn Vale", guild = "Slakthuset", online = true } })
+    conv.fake = true
+    local now = time()
+    local day = 86400
+    local script = {
+        { -2 * day - 3000, "in", "Hey! Saw your post about the guild, are you still recruiting?" },
+        { -2 * day - 2940, "in", "I'm a priest, mostly holy, lvl 42 right now" },
+        { -2 * day - 2800, "out", "Hi! Yes we are :) What's your raid experience?" },
+        { -2 * day - 2700, "in", "Did MC and Onyxia back in the day. I can show you my gear: |cff0070dd|Hitem:10041::::::::60:::::::|h[Dragon Finger]|h|r" },
+        { -day - 500, "sys", "is AFK: Away from keyboard", "afk" },
+        { -day - 400, "out", "Ping me when you're back!" },
+        { -3600, "in", "Back now, sorry! This is a longer message to test word wrapping in the conversation view, it should wrap nicely across several lines without breaking the layout or overlapping the next message." },
+        { -3500, "in", "Also, do you have a guild bank?" },
+        { -600, "in", "Hello?" },
+        { -300, "in", "Guess you're busy, talk later! |cff71d5ff|Hspell:2061|h[Flash Heal]|h|r" },
+    }
+    for i, s in ipairs(script) do
+        local d = s[2]
+        Data.AddMessage(key, { d = d, m = s[3], s = d == "in" and name or nil, k = s[4], t = now + s[1] })
+        -- Everything before the last three incoming messages counts as read.
+        if i == 8 then Data.MarkRead(key) end
+    end
+    Hush:Print("Created a test conversation with", name, "- open /hush and select it.")
+end, "create a test conversation: /hush fakeconvo [name]")

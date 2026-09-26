@@ -391,6 +391,65 @@ function W.Pool(create, reset)
     return pool
 end
 
+-- ---------------------------------------------------------------------------
+-- Thin scrollbar for virtualized lists.
+-- onScroll(newOffset) is called while dragging; call :Update(offset, contentH, viewH) after rendering.
+-- ---------------------------------------------------------------------------
+
+function W.Scrollbar(parent, onScroll)
+    local bar = CreateFrame("Frame", nil, parent)
+    bar:SetPoint("TOPRIGHT", -2, -2)
+    bar:SetPoint("BOTTOMRIGHT", -2, 2)
+    bar:SetWidth(4)
+    bar:SetFrameLevel(parent:GetFrameLevel() + 10)
+    local thumb = CreateFrame("Frame", nil, bar)
+    thumb:SetWidth(4)
+    thumb.tex = W.Fill(thumb, "line", 1, "OVERLAY")
+    thumb.tex:SetAllPoints()
+    thumb:EnableMouse(true)
+    bar.thumb = thumb
+    bar.offset, bar.maxOffset = 0, 0
+
+    -- OnUpdate only while the mouse button is held.
+    thumb:SetScript("OnMouseDown", function(self)
+        local _, cy = GetCursorPosition()
+        self.startY = cy / self:GetEffectiveScale()
+        self.startOffset = bar.offset
+        self.tex:SetColorTexture(Theme:Color("textFaint"))
+        self:SetScript("OnUpdate", function(s)
+            local _, y = GetCursorPosition()
+            y = y / s:GetEffectiveScale()
+            local trackH = bar:GetHeight() - s:GetHeight()
+            if trackH > 0 then
+                onScroll(s.startOffset + (s.startY - y) / trackH * bar.maxOffset)
+            end
+        end)
+    end)
+    thumb:SetScript("OnMouseUp", function(self)
+        self:SetScript("OnUpdate", nil)
+        self.tex:SetColorTexture(Theme:Color("line"))
+    end)
+
+    function bar:Update(offset, contentH, viewH)
+        self.offset = offset
+        self.maxOffset = max(0, contentH - viewH)
+        if contentH <= viewH or viewH <= 0 then
+            self:Hide()
+            return
+        end
+        self:Show()
+        local trackH = self:GetHeight()
+        local thumbH = max(24, trackH * viewH / contentH)
+        local pos = (trackH - thumbH) * (offset / self.maxOffset)
+        thumb:SetHeight(thumbH)
+        thumb:ClearAllPoints()
+        thumb:SetPoint("TOPRIGHT", self, "TOPRIGHT", 0, -pos)
+    end
+
+    bar:Hide()
+    return bar
+end
+
 -- Resize bounds differ between client generations.
 function W.SetResizeBounds(frame, minW, minH, maxW, maxH)
     if frame.SetResizeBounds then

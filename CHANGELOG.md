@@ -33,3 +33,13 @@
 - Thin scrollbar (mouse wheel, draggable thumb – OnUpdate only while dragging).
 - Selecting a chat marks it read and fills the header (name, class, level, guild, zone).
 - Test commands: `/hush fakemany [n]`, `/hush clearfake`.
+
+### Step 5 – Conversation view
+- `UI/Conversation.lua`: compact message list (name + time on one line, text below, no bubbles), virtualized with pooled rows; wrapped text is measured once and cached outside SavedVariables.
+- Messages from the same sender within 5 minutes are grouped. Day dividers ("TODAY", "YESTERDAY", date). Accent "NEW" line at the first unread message; the view opens there if it would be off screen.
+- Initials in class-colored squares (portraits setting), 24 h timestamps (timestamps setting).
+- System lines (AFK/DND/not found) as discreet rows with a colored dot.
+- Item, spell and quest links are clickable (`SetItemRef`) and show tooltips on hover.
+- Stays pinned to the bottom when new messages arrive; keeps position when scrolled up. Messages that arrive while the window is hidden are unread until you open it.
+- Shared thin scrollbar widget for list and conversation.
+- Test command: `/hush fakeconvo [name]`.

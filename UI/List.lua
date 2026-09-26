@@ -279,21 +279,6 @@ local function maxOffset()
     return max(0, contentH - area:GetHeight())
 end
 
-local function updateScrollbar()
-    local viewH = area:GetHeight()
-    if contentH <= viewH or viewH <= 0 then
-        scrollbar:Hide()
-        return
-    end
-    scrollbar:Show()
-    local trackH = scrollbar:GetHeight()
-    local thumbH = max(24, trackH * viewH / contentH)
-    local pos = (trackH - thumbH) * (offset / maxOffset())
-    scrollbar.thumb:SetHeight(thumbH)
-    scrollbar.thumb:ClearAllPoints()
-    scrollbar.thumb:SetPoint("TOPRIGHT", scrollbar, "TOPRIGHT", 0, -pos)
-end
-
 local function render()
     rowPool:ReleaseAll()
     catPool:ReleaseAll()
@@ -313,47 +298,12 @@ local function render()
             f:SetPoint("TOPRIGHT", area, "TOPRIGHT", 0, -top)
         end
     end
-    updateScrollbar()
+    scrollbar:Update(offset, contentH, viewH)
 end
 
 function List.SetOffset(value)
     offset = min(max(0, value), maxOffset())
     render()
-end
-
-local function createScrollbar()
-    scrollbar = CreateFrame("Frame", nil, area)
-    scrollbar:SetPoint("TOPRIGHT", -2, -2)
-    scrollbar:SetPoint("BOTTOMRIGHT", -2, 2)
-    scrollbar:SetWidth(4)
-    scrollbar:SetFrameLevel(area:GetFrameLevel() + 10)
-    local thumb = CreateFrame("Frame", nil, scrollbar)
-    thumb:SetWidth(4)
-    thumb.tex = W.Fill(thumb, "line", 1, "OVERLAY")
-    thumb.tex:SetAllPoints()
-    thumb:EnableMouse(true)
-    scrollbar.thumb = thumb
-
-    -- Dragging uses OnUpdate only while the mouse button is held.
-    thumb:SetScript("OnMouseDown", function(self)
-        local _, cy = GetCursorPosition()
-        self.startY = cy / self:GetEffectiveScale()
-        self.startOffset = offset
-        self.tex:SetColorTexture(Theme:Color("textFaint"))
-        self:SetScript("OnUpdate", function(s)
-            local _, y = GetCursorPosition()
-            y = y / s:GetEffectiveScale()
-            local trackH = scrollbar:GetHeight() - s:GetHeight()
-            if trackH > 0 then
-                List.SetOffset(s.startOffset + (s.startY - y) / trackH * maxOffset())
-            end
-        end)
-    end)
-    thumb:SetScript("OnMouseUp", function(self)
-        self:SetScript("OnUpdate", nil)
-        self.tex:SetColorTexture(Theme:Color("line"))
-    end)
-    scrollbar:Hide()
 end
 
 -- Rebuild items and render. Coalesced: many events in one frame cause one refresh.
@@ -388,8 +338,10 @@ function List.Select(key)
     local tab = Data.TabOf(conv)
     if Hush.Main.activeTab ~= tab then Hush.Main.SetTab(tab) end
     List.selected = key
+    -- Remember where the unread messages start before marking them read.
+    local firstUnread = conv.firstUnread
     Data.MarkRead(key)
-    Hush:Fire("CONV_OPENED", key, conv)
+    Hush:Fire("CONV_OPENED", key, conv, firstUnread)
     List.Refresh()
 end
 
@@ -407,7 +359,7 @@ Hush:RegisterCallback("WINDOW_BUILT", function()
     area:SetScript("OnSizeChanged", function() if Hush.Main.IsShown() then List.Refresh() end end)
     rowPool = W.Pool(createRow, function(r) r.key = nil; r.hover:Hide() end)
     catPool = W.Pool(createCat)
-    createScrollbar()
+    scrollbar = W.Scrollbar(area, List.SetOffset)
 end, "List")
 
 Hush:RegisterCallback("WINDOW_SHOWN", function() List.Refresh() end, "List")
