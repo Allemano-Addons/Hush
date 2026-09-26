@@ -1,0 +1,8 @@
+<Bindings>
+	<Binding name="HUSH_TOGGLE" header="HUSH" category="ADDONS">
+		Hush.Toggle()
+	</Binding>
+	<Binding name="HUSH_REPLY" category="ADDONS">
+		Hush.ReplyLast()
+	</Binding>
+</Bindings>
