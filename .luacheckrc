@@ -39,5 +39,6 @@ read_globals = {
     "ERR_CHAT_PLAYER_NOT_FOUND_S",
     "SendChatMessage", "BNSendWhisper", "BNGetNumFriends", "BNGetFriendInfo",
     "ChatFrameUtil", "ChatEdit_SetLastTellTarget", "hooksecurefunc", "IsShiftKeyDown",
+    "MouseIsOver", "IsMouseButtonDown", "InviteUnit", "GuildInvite", "CanGuildInvite", "C_PartyInfo",
     "IsInRaid", "IsInGroup", "GetNumRaidMembers", "GetNumPartyMembers", "GetNumGroupMembers",
 }

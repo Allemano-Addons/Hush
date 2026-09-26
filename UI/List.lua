@@ -84,8 +84,8 @@ local function collect()
     local searching = query ~= ""
     local y = TOP_PAD
 
-    local function addConv(key, conv)
-        items[#items + 1] = { kind = "conv", key = key, conv = conv, y = y, h = S.chatRowH }
+    local function addConv(key, conv, catId)
+        items[#items + 1] = { kind = "conv", key = key, conv = conv, catId = catId, y = y, h = S.chatRowH }
         y = y + S.chatRowH
     end
 
@@ -112,7 +112,7 @@ local function collect()
                 items[#items + 1] = { kind = "cat", id = id, cat = cat, count = #list, unread = unread, y = y, h = S.categoryH }
                 y = y + S.categoryH
                 if not cat.collapsed or searching then
-                    for _, e in ipairs(list) do addConv(e.key, e.conv) end
+                    for _, e in ipairs(list) do addConv(e.key, e.conv, id) end
                 end
             end
         end
@@ -191,6 +191,8 @@ local function createRow()
 
     r:SetScript("OnEnter", function(self) self.hover:Show() end)
     r:SetScript("OnLeave", function(self) self.hover:Hide() end)
+    r:RegisterForDrag("LeftButton")
+    r:SetScript("OnDragStart", function(self) List.StartDrag(self.key) end)
     r:SetScript("OnClick", function(self, button)
         if button == "RightButton" then
             Hush:Fire("CONV_CONTEXT", self.key, self)
@@ -204,6 +206,7 @@ end
 local function fillRow(r, it)
     local conv = it.conv
     r.key = it.key
+    r.catId = it.catId
     local selected = it.key == List.selected
     r.sel:SetShown(selected)
     r.bar:SetShown(selected)
@@ -254,8 +257,7 @@ local function createCat()
             Hush:Fire("CATEGORY_CONTEXT", self.id, self)
         else
             local cat = Hush.char.categories.byId[self.id]
-            cat.collapsed = not cat.collapsed
-            List.Refresh()
+            Data.SetCategoryCollapsed(self.id, not cat.collapsed)
         end
     end)
     return c
@@ -327,6 +329,129 @@ local function queueRefresh()
     end)
 end
 List.QueueRefresh = queueRefresh
+
+-- ---------------------------------------------------------------------------
+-- Drag and drop between categories (Whispers tab)
+-- ---------------------------------------------------------------------------
+
+local ghost, dropHL
+local drag -- { key, target }
+
+local function buildDragFrames()
+    ghost = CreateFrame("Frame", nil, UIParent)
+    ghost:SetFrameStrata("TOOLTIP")
+    ghost:SetSize(220, 38)
+    ghost.bg = W.Fill(ghost, "selected", 0.95)
+    ghost.bg:SetAllPoints()
+    ghost.border = W.Border(ghost, "line")
+    W.OnAccent(function(r, g, b) ghost.border:SetColor(r, g, b, 1) end)
+    ghost.initial = W.Text(ghost, "semibold", 1)
+    ghost.initial:SetPoint("LEFT", 12, 0)
+    ghost.name = W.Text(ghost, "semibold", 0)
+    ghost.name:SetPoint("LEFT", 32, 0)
+    ghost:Hide()
+
+    dropHL = CreateFrame("Frame", nil, area)
+    dropHL:SetFrameLevel(area:GetFrameLevel() + 8)
+    dropHL.bg = dropHL:CreateTexture(nil, "BACKGROUND")
+    dropHL.bg:SetAllPoints()
+    W.OnAccent(function(r, g, b) dropHL.bg:SetColorTexture(r, g, b, 0.06) end)
+    dropHL.dash = W.DashedBorder(dropHL)
+    dropHL:SetScript("OnSizeChanged", function(self) self.dash:Layout() end)
+    dropHL:Hide()
+end
+
+-- Highlight the whole block of a category: header plus its rows.
+local function highlight(catId)
+    if not catId then dropHL:Hide() return end
+    local top, bottom
+    for _, it in ipairs(items) do
+        local id = it.kind == "cat" and it.id or it.catId
+        if id == catId then
+            top = top or it.y
+            bottom = it.y + it.h
+        end
+    end
+    if not top then dropHL:Hide() return end
+    dropHL:ClearAllPoints()
+    dropHL:SetPoint("TOPLEFT", area, "TOPLEFT", 4, -(top - offset))
+    dropHL:SetPoint("TOPRIGHT", area, "TOPRIGHT", -8, -(top - offset))
+    dropHL:SetHeight(bottom - top)
+    dropHL:Show()
+end
+
+-- Which category is under the mouse (MouseIsOver on the visible pooled frames).
+local function targetUnderMouse()
+    if not MouseIsOver(area) then return nil end
+    for _, c in ipairs(catPool.active) do
+        if MouseIsOver(c) then return c.id end
+    end
+    for _, r in ipairs(rowPool.active) do
+        if MouseIsOver(r) then return r.catId end
+    end
+    return nil
+end
+
+local function finishDrag()
+    if not drag then return end
+    ghost:SetScript("OnUpdate", nil)
+    ghost:Hide()
+    dropHL:Hide()
+    local key, target = drag.key, targetUnderMouse()
+    drag = nil
+    local conv = Data.Get(key)
+    if not conv or not target then return end
+    if target == "pinned" then
+        if not conv.pinned then Data.SetPinned(key, true) end
+    else
+        if conv.pinned then Data.SetPinned(key, false) end
+        if conv.category ~= target then Data.Move(key, target) end
+    end
+    List.Refresh()
+end
+
+function List.StartDrag(key)
+    if Hush.Main.activeTab ~= "whispers" or (Hush.Main.search or "") ~= "" then return end
+    local conv = Data.Get(key)
+    if not conv then return end
+    if not ghost then buildDragFrames() end
+    drag = { key = key }
+    W.HideTooltip()
+
+    local r, g, b = List.NameColor(conv)
+    ghost.initial:SetText(initial(conv.display))
+    ghost.initial:SetTextColor(r, g, b)
+    ghost.name:SetText(conv.display)
+    ghost.name:SetTextColor(r, g, b)
+    ghost:Show()
+
+    -- OnUpdate only while dragging: follow the cursor, find the target, auto-scroll.
+    ghost:SetScript("OnUpdate", function(self)
+        if not IsMouseButtonDown("LeftButton") then
+            finishDrag()
+            return
+        end
+        local x, y = GetCursorPosition()
+        local scale = self:GetEffectiveScale()
+        self:ClearAllPoints()
+        self:SetPoint("LEFT", UIParent, "BOTTOMLEFT", x / scale + 12, y / scale)
+
+        local ay = y / area:GetEffectiveScale()
+        if MouseIsOver(area) then
+            if ay > area:GetTop() - 24 then
+                List.SetOffset(offset - 8)
+            elseif ay < area:GetBottom() + 24 then
+                List.SetOffset(offset + 8)
+            end
+        end
+
+        local target = targetUnderMouse()
+        drag.target = target
+        highlight(target) -- also follows auto-scrolling
+    end)
+end
+
+function List.IsDragging() return drag ~= nil end
 
 -- ---------------------------------------------------------------------------
 -- Selection

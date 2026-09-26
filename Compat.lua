@@ -213,6 +213,26 @@ function Compat.Send(conv, text)
     return false
 end
 
+function Compat.InviteToGroup(name)
+    if C_PartyInfo and C_PartyInfo.InviteUnit then
+        C_PartyInfo.InviteUnit(name)
+    elseif InviteUnit then
+        InviteUnit(name)
+    end
+end
+
+function Compat.CanGuildInvite()
+    return IsInGuild() and CanGuildInvite ~= nil and CanGuildInvite() and true or false
+end
+
+function Compat.GuildInvite(name)
+    if C_GuildInfo and C_GuildInfo.Invite then
+        C_GuildInfo.Invite(name)
+    elseif GuildInvite then
+        GuildInvite(name)
+    end
+end
+
 -- Call fn(link) whenever the game inserts a link (shift-click on items, spells, quests...).
 function Compat.HookInsertLink(fn)
     if ChatFrameUtil and ChatFrameUtil.InsertLink then

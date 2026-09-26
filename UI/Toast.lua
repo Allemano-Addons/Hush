@@ -31,10 +31,10 @@ local function build()
 
     frame.title = W.Text(frame, "semibold", 1, "text")
     frame.title:SetPoint("TOPLEFT", 16, -11)
-    frame.title:SetPoint("RIGHT", -12, 0)
+    frame.title:SetWidth(292)
     frame.sub = W.Text(frame, "regular", -1, "textDim")
     frame.sub:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -5)
-    frame.sub:SetPoint("RIGHT", -12, 0)
+    frame.sub:SetWidth(292)
 
     frame.fadeIn = frame:CreateAnimationGroup()
     local a = frame.fadeIn:CreateAnimation("Alpha")

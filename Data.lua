@@ -218,6 +218,80 @@ function Data.ModData(key, module)
 end
 
 -- ---------------------------------------------------------------------------
+-- Categories
+-- ---------------------------------------------------------------------------
+
+function Data.Categories()
+    return Hush.char.categories
+end
+
+-- Returns the new category id. owner marks module-created categories.
+function Data.CreateCategory(name, owner, id)
+    local cats = Hush.char.categories
+    name = strtrim(name or "")
+    if name == "" then return nil end
+    if id and cats.byId[id] then return id end
+    if not id then
+        local n = 1
+        repeat
+            id = "c" .. n
+            n = n + 1
+        until not cats.byId[id]
+    end
+    cats.byId[id] = { name = name, collapsed = false, owner = owner }
+    tinsert(cats.order, id)
+    Hush:Fire("CATEGORIES_CHANGED")
+    return id
+end
+
+function Data.RenameCategory(id, name)
+    local cat = Hush.char.categories.byId[id]
+    name = strtrim(name or "")
+    if not cat or id == "pinned" or name == "" then return false end
+    cat.name = name
+    Hush:Fire("CATEGORIES_CHANGED")
+    return true
+end
+
+-- Deleting moves its chats to Other.
+function Data.DeleteCategory(id)
+    local cats = Hush.char.categories
+    local cat = cats.byId[id]
+    if not cat or cat.locked then return false end
+    for _, conv in pairs(Data.All()) do
+        if conv.category == id then conv.category = "other" end
+    end
+    cats.byId[id] = nil
+    for i = #cats.order, 1, -1 do
+        if cats.order[i] == id then tremove(cats.order, i) end
+    end
+    Hush:Fire("CATEGORIES_CHANGED")
+    return true
+end
+
+-- Move a category up (-1) or down (+1). Pinned always stays first.
+function Data.MoveCategory(id, delta)
+    local order = Hush.char.categories.order
+    for i, cid in ipairs(order) do
+        if cid == id then
+            local j = i + delta
+            if j < 1 or j > #order or order[j] == "pinned" or id == "pinned" then return false end
+            order[i], order[j] = order[j], order[i]
+            Hush:Fire("CATEGORIES_CHANGED")
+            return true
+        end
+    end
+    return false
+end
+
+function Data.SetCategoryCollapsed(id, collapsed)
+    local cat = Hush.char.categories.byId[id]
+    if not cat then return end
+    cat.collapsed = collapsed and true or false
+    Hush:Fire("CATEGORIES_CHANGED")
+end
+
+-- ---------------------------------------------------------------------------
 -- Splitting long messages (chat limit is 255 bytes)
 -- ---------------------------------------------------------------------------
 

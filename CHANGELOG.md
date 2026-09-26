@@ -65,3 +65,10 @@
 - Sender names in class color, "Leader" / "Raid warning" tags, raid warnings in orange. Party/raid colors in the list.
 - Header shows "Active · N members" or "Ended <time>". Sending to an ended group is blocked with a notice.
 - Test command: `/hush fakegroup`.
+
+### Step 9 – Categories, drag and drop, context menus
+- Categories: "+ New category", rename (all except Pinned), delete (chats move to Other; Pinned and Other can't be deleted), move up/down, collapse/expand.
+- Drag and drop in the Whispers tab: a ghost row follows the cursor, the target category is outlined with a dashed accent border, the list auto-scrolls near its edges, and the drop is decided with `MouseIsOver()`. Dropping on Pinned pins; dropping a pinned chat elsewhere unpins it. OnUpdate runs only while dragging.
+- Right-click menu on chats: Move to…, Pin/Unpin, Mark as read, Invite to group, Guild invite, Delete chat (with confirmation). Moving a request accepts it. Also on the new "…" button in the header.
+- Right-click menu on category headers.
+- Own flat widgets: context menu with submenus (no UIDropDownMenu, closes on click outside), in-window dialog for prompts and confirmations, dashed border.

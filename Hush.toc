@@ -15,6 +15,7 @@ UI\Main.lua
 UI\List.lua
 UI\Conversation.lua
 UI\Input.lua
+UI\Menus.lua
 UI\Toast.lua
 Notify.lua
 API.lua

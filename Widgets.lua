@@ -207,6 +207,10 @@ local ICONS = {
         local a, b = line(f, -q * 0.75, q * 1.5, q * 0.75, 0, 1.5), line(f, q * 0.75, 0, -q * 0.75, -q * 1.5, 1.5)
         if a then return { a, b } end
     end,
+    more = function(f, s) -- three dots
+        local m = s / 2 - 1
+        return { rect(f, 0, m, 2, 2), rect(f, m, m, 2, 2), rect(f, s - 2, m, 2, 2) }
+    end,
     grip = function(f, s)
         local parts = {}
         for i = 1, 3 do
@@ -294,6 +298,12 @@ function W.Button(parent, label, style, onClick)
             b.bg:SetColorTexture(r, g, bl, 1)
             b.border:SetColor(r, g, bl, 1)
         end)
+        b:SetScript("OnEnter", function(self) self.bg:SetAlpha(0.85) end)
+        b:SetScript("OnLeave", function(self) self.bg:SetAlpha(1) end)
+    elseif style == "danger" then
+        b.bg:SetColorTexture(Theme:Color("danger"))
+        b.border:SetColor(Theme:Color("danger"))
+        b.text:SetTextColor(Theme:Color("text"))
         b:SetScript("OnEnter", function(self) self.bg:SetAlpha(0.85) end)
         b:SetScript("OnLeave", function(self) self.bg:SetAlpha(1) end)
     elseif style == "ghost" then
@@ -448,6 +458,285 @@ function W.Scrollbar(parent, onScroll)
 
     bar:Hide()
     return bar
+end
+
+-- ---------------------------------------------------------------------------
+-- Dashed accent border (drop target highlight). Call :Layout() after resizing.
+-- ---------------------------------------------------------------------------
+
+function W.DashedBorder(frame, dash, gap)
+    dash, gap = dash or 6, gap or 4
+    local d = { frame = frame, textures = {} }
+    function d:Layout()
+        local w, h = frame:GetWidth(), frame:GetHeight()
+        local px = Theme:Pixel(frame)
+        local r, g, b = Theme:Accent()
+        local n = 0
+        local function seg(point, x, y, sw, sh)
+            n = n + 1
+            local t = self.textures[n]
+            if not t then
+                t = frame:CreateTexture(nil, "OVERLAY")
+                self.textures[n] = t
+            end
+            t:ClearAllPoints()
+            t:SetPoint(point, frame, point, x, y)
+            t:SetSize(sw, sh)
+            t:SetColorTexture(r, g, b, 1)
+            t:Show()
+        end
+        for x = 0, w - 1, dash + gap do
+            local len = min(dash, w - x)
+            seg("TOPLEFT", x, 0, len, px)
+            seg("BOTTOMLEFT", x, 0, len, px)
+        end
+        for y = 0, h - 1, dash + gap do
+            local len = min(dash, h - y)
+            seg("TOPLEFT", 0, -y, px, len)
+            seg("TOPRIGHT", 0, -y, px, len)
+        end
+        for i = n + 1, #self.textures do self.textures[i]:Hide() end
+    end
+    return d
+end
+
+-- ---------------------------------------------------------------------------
+-- Context menu (own, flat). No UIDropDownMenu, so no taint.
+-- items: { text, onClick, disabled, danger, checked, submenu = {items}, separator = true }
+-- ---------------------------------------------------------------------------
+
+local MENU_ITEM_H = 24
+local menus = {}
+
+local function hideMenu(level)
+    for l = level, #menus do menus[l]:Hide() end
+end
+
+function W.CloseMenus()
+    hideMenu(1)
+end
+
+function W.IsMenuOpen()
+    return menus[1] ~= nil and menus[1]:IsShown()
+end
+
+local showMenu
+
+local function menuButton(m, i)
+    local b = m.buttons[i]
+    if b then return b end
+    b = CreateFrame("Button", nil, m)
+    b:SetHeight(MENU_ITEM_H)
+    b.hover = W.Fill(b, "selected", 1)
+    b.hover:SetAllPoints()
+    b.hover:Hide()
+    b.check = b:CreateTexture(nil, "ARTWORK")
+    b.check:SetSize(6, 6)
+    b.check:SetPoint("LEFT", 10, 0)
+    W.OnAccent(function(r, g, bl) b.check:SetColorTexture(r, g, bl, 1) end)
+    b.text = W.Text(b, "regular", 0, "text")
+    b.text:SetPoint("LEFT", 24, 0)
+    b.arrow = W.Icon(b, "chevronRight", 8, ">")
+    b.arrow.box:ClearAllPoints()
+    b.arrow.box:SetPoint("RIGHT", -8, 0)
+    b.arrow:SetColor(Theme:Color("textDim"))
+    b.line = W.Fill(b, "line", 1, "ARTWORK")
+    b.line:SetPoint("LEFT", 8, 0)
+    b.line:SetPoint("RIGHT", -8, 0)
+    W.PixelSize(b.line, b, "h")
+
+    b:SetScript("OnEnter", function(self)
+        if self.item.separator then return end
+        if not self.item.disabled then self.hover:Show() end
+        if self.item.submenu and not self.item.disabled then
+            showMenu(m.level + 1, self.item.submenu, self)
+        else
+            hideMenu(m.level + 1)
+        end
+    end)
+    b:SetScript("OnLeave", function(self) self.hover:Hide() end)
+    b:SetScript("OnClick", function(self)
+        local item = self.item
+        if item.separator or item.disabled or item.submenu then return end
+        W.CloseMenus()
+        if item.onClick then item.onClick() end
+    end)
+    m.buttons[i] = b
+    return b
+end
+
+local function getMenu(level)
+    local m = menus[level]
+    if m then return m end
+    m = CreateFrame("Frame", nil, UIParent)
+    m.level = level
+    m:SetFrameStrata("FULLSCREEN_DIALOG")
+    m:SetFrameLevel(10 + level * 10)
+    m:SetClampedToScreen(true)
+    m:EnableMouse(true)
+    m.bg = W.Fill(m, "field", 0.98)
+    m.bg:SetAllPoints()
+    m.border = W.Border(m, "line")
+    m.buttons = {}
+    m:Hide()
+    menus[level] = m
+    return m
+end
+
+-- anchor: a frame (submenu opens to its right) or nil (at the cursor).
+showMenu = function(level, items, anchor)
+    hideMenu(level)
+    local m = getMenu(level)
+    local width, y = 160, 4
+    for i, item in ipairs(items) do
+        local b = menuButton(m, i)
+        b.item = item
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", 0, -y)
+        b:SetPoint("TOPRIGHT", 0, -y)
+        local sep = item.separator
+        b:SetHeight(sep and 9 or MENU_ITEM_H)
+        b.line:SetShown(sep == true)
+        b.text:SetShown(not sep)
+        b.check:SetShown(item.checked == true)
+        b.arrow:SetShown(item.submenu ~= nil)
+        if not sep then
+            b.text:SetText(item.text)
+            local color = item.disabled and "textFaint" or item.danger and "danger" or "text"
+            b.text:SetTextColor(Theme:Color(color))
+            width = max(width, b.text:GetStringWidth() + 24 + 28)
+        end
+        b:Show()
+        y = y + b:GetHeight()
+    end
+    for i = #items + 1, #m.buttons do m.buttons[i]:Hide() end
+    m:SetSize(width, y + 4)
+    m:ClearAllPoints()
+    if anchor then
+        m:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 2, 4)
+    else
+        local x, cy = GetCursorPosition()
+        local scale = UIParent:GetEffectiveScale()
+        m:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, cy / scale)
+    end
+    m:Show()
+end
+
+function W.OpenMenu(items)
+    W.HideTooltip()
+    showMenu(1, items, nil)
+end
+
+-- Close menus when clicking anywhere else.
+do
+    local watcher = CreateFrame("Frame")
+    local ok = pcall(watcher.RegisterEvent, watcher, "GLOBAL_MOUSE_DOWN")
+    if ok then
+        watcher:SetScript("OnEvent", function()
+            if not W.IsMenuOpen() then return end
+            for _, m in ipairs(menus) do
+                if m:IsShown() and m:IsMouseOver() then return end
+            end
+            W.CloseMenus()
+        end)
+    else
+        -- Fallback: an invisible full-screen catcher below the menus.
+        local catcher = CreateFrame("Button", nil, UIParent)
+        catcher:SetAllPoints(UIParent)
+        catcher:SetFrameStrata("FULLSCREEN_DIALOG")
+        catcher:SetFrameLevel(1)
+        catcher:RegisterForClicks("AnyUp")
+        catcher:SetScript("OnClick", function() W.CloseMenus() end)
+        catcher:Hide()
+        hooksecurefunc(W, "OpenMenu", function() catcher:Show() end)
+        hooksecurefunc(W, "CloseMenus", function() catcher:Hide() end)
+    end
+end
+
+-- ---------------------------------------------------------------------------
+-- Dialog inside a parent frame: confirm or text prompt.
+-- opts: { title, text, input = default text or nil, okText, danger, onOk(value) }
+-- ---------------------------------------------------------------------------
+
+local dialogs = {}
+
+function W.Dialog(parent, opts)
+    local d = dialogs[parent]
+    if not d then
+        d = CreateFrame("Frame", nil, parent)
+        d:SetAllPoints()
+        d:SetFrameLevel(parent:GetFrameLevel() + 50)
+        d:EnableMouse(true)
+        d.dim = d:CreateTexture(nil, "BACKGROUND")
+        d.dim:SetAllPoints()
+        d.dim:SetColorTexture(0, 0, 0, 0.55)
+
+        local box = CreateFrame("Frame", nil, d)
+        box:SetSize(340, 150)
+        box:SetPoint("CENTER")
+        box.bg = W.Fill(box, "window", 1)
+        box.bg:SetAllPoints()
+        W.Border(box, "line")
+        d.box = box
+
+        d.title = W.Text(box, "heading", 2, "text")
+        d.title:SetPoint("TOPLEFT", 16, -16)
+        d.text = W.Text(box, "regular", 0, "textDim")
+        d.text:SetPoint("TOPLEFT", d.title, "BOTTOMLEFT", 0, -8)
+        d.text:SetWidth(308)
+        d.text:SetWordWrap(true)
+
+        d.edit = W.EditBox(box, "", 30)
+        d.edit:SetWidth(308)
+        d.edit:SetMaxLetters(40)
+
+        d.cancel = W.Button(box, "Cancel", "ghost", function() d:Hide() end)
+        d.cancel:SetPoint("BOTTOMRIGHT", -16, 14)
+        d.okButtons = {}
+
+        local function ok()
+            local value = d.opts.input and strtrim(d.edit:GetText() or "") or true
+            if d.opts.input and value == "" then return end
+            d:Hide()
+            if d.opts.onOk then d.opts.onOk(value) end
+        end
+        d.ok = ok
+        d.edit:SetScript("OnEnterPressed", ok)
+        d.edit:SetScript("OnEscapePressed", function() d:Hide() end)
+        d:SetScript("OnHide", function() d.edit:ClearFocus() end)
+        dialogs[parent] = d
+    end
+
+    d.opts = opts
+    d.title:SetText(strupper(opts.title or ""))
+    d.text:SetText(opts.text or "")
+    local style = opts.danger and "danger" or "accent"
+    if not d.okButtons[style] then
+        d.okButtons[style] = W.Button(d.box, "", style, function() d.ok() end)
+        d.okButtons[style]:SetPoint("RIGHT", d.cancel, "LEFT", -8, 0)
+    end
+    for s, b in pairs(d.okButtons) do b:SetShown(s == style) end
+    local okBtn = d.okButtons[style]
+    okBtn.text:SetText(opts.okText or "OK")
+    okBtn:SetWidth(okBtn.text:GetStringWidth() + 28)
+
+    local textH = (opts.text and opts.text ~= "") and (d.text:GetStringHeight() + 8) or 0
+    if opts.input then
+        d.edit:ClearAllPoints()
+        d.edit:SetPoint("TOPLEFT", d.title, "BOTTOMLEFT", 0, -(12 + textH))
+        d.edit:SetText(opts.input)
+        d.edit:Show()
+        d.box:SetHeight(16 + 20 + 12 + textH + 30 + 16 + 28 + 14)
+    else
+        d.edit:Hide()
+        d.box:SetHeight(16 + 20 + textH + 16 + 28 + 14)
+    end
+    d:Show()
+    if opts.input then
+        d.edit:SetFocus()
+        d.edit:HighlightText()
+    end
+    return d
 end
 
 -- Resize bounds differ between client generations.
