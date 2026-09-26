@@ -166,6 +166,69 @@ function Compat.BNInfo(bnID)
     end
 end
 
+-- Current session id (bnetAccountID) for a BattleTag, or nil if not a friend / offline list.
+function Compat.BNIDFromTag(tag)
+    if not tag or not BNGetNumFriends then return nil end
+    for i = 1, BNGetNumFriends() do
+        if C_BattleNet and C_BattleNet.GetFriendAccountInfo then
+            local a = C_BattleNet.GetFriendAccountInfo(i)
+            if a and a.battleTag == tag then return a.bnetAccountID end
+        elseif BNGetFriendInfo then
+            local id, _, battleTag = BNGetFriendInfo(i)
+            if battleTag == tag then return id end
+        end
+    end
+end
+
+-- ---------------------------------------------------------------------------
+-- Sending
+-- ---------------------------------------------------------------------------
+
+local function sendChat(text, chatType, target)
+    if C_ChatInfo and C_ChatInfo.SendChatMessage then
+        C_ChatInfo.SendChatMessage(text, chatType, nil, target)
+    else
+        SendChatMessage(text, chatType, nil, target)
+    end
+end
+
+-- Send one part (<= 255 bytes) to a conversation. Returns false if it can't be delivered.
+function Compat.Send(conv, text)
+    if conv.kind == "whisper" then
+        sendChat(text, "WHISPER", conv.target)
+        return true
+    elseif conv.kind == "bnet" then
+        local id = Compat.BNIDFromTag(conv.target) or conv.bnID
+        if not id then return false end
+        if C_BattleNet and C_BattleNet.SendWhisper then
+            C_BattleNet.SendWhisper(id, text)
+        else
+            BNSendWhisper(id, text)
+        end
+        return true
+    elseif conv.kind == "group" then
+        sendChat(text, conv.channel or "PARTY")
+        return true
+    end
+    return false
+end
+
+-- Call fn(link) whenever the game inserts a link (shift-click on items, spells, quests...).
+function Compat.HookInsertLink(fn)
+    if ChatFrameUtil and ChatFrameUtil.InsertLink then
+        hooksecurefunc(ChatFrameUtil, "InsertLink", fn)
+    elseif ChatEdit_InsertLink then
+        hooksecurefunc("ChatEdit_InsertLink", fn)
+    end
+end
+
+-- Let /r in the default chat reply to a whisper that Hush hid.
+function Compat.SetLastTellTarget(name, chatType)
+    if ChatEdit_SetLastTellTarget then
+        ChatEdit_SetLastTellTarget(name, chatType)
+    end
+end
+
 -- ---------------------------------------------------------------------------
 -- System messages
 -- ---------------------------------------------------------------------------

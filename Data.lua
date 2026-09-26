@@ -218,6 +218,67 @@ function Data.ModData(key, module)
 end
 
 -- ---------------------------------------------------------------------------
+-- Splitting long messages (chat limit is 255 bytes)
+-- ---------------------------------------------------------------------------
+
+local LIMIT = 255
+
+-- Byte spans of hyperlinks, which must never be split.
+local function linkSpans(text)
+    local spans = {}
+    local pos = 1
+    while true do
+        local s, e = text:find("|c%x%x%x%x%x%x%x%x|H.-|h.-|h|r", pos)
+        if not s then s, e = text:find("|H.-|h.-|h", pos) end
+        if not s then break end
+        spans[#spans + 1] = { s, e }
+        pos = e + 1
+    end
+    return spans
+end
+
+local function insideSpan(spans, i)
+    for _, sp in ipairs(spans) do
+        if i > sp[1] and i <= sp[2] then return sp end
+    end
+end
+
+-- Returns a list of parts, each <= 255 bytes, split at spaces where possible.
+function Data.SplitMessage(text)
+    text = strtrim(text or "")
+    local parts = {}
+    while #text > LIMIT do
+        local spans = linkSpans(text)
+        local cut
+        -- Last space within the limit that is not inside a link.
+        for i = LIMIT + 1, 2, -1 do
+            if text:sub(i, i) == " " and not insideSpan(spans, i) then
+                cut = i
+                break
+            end
+        end
+        local nextStart
+        if cut then
+            nextStart = cut + 1
+            cut = cut - 1
+        else
+            -- No usable space: hard cut, but not inside a link or a UTF-8 character.
+            cut = LIMIT
+            local sp = insideSpan(spans, cut + 1)
+            if sp and sp[1] > 1 then cut = sp[1] - 1 end
+            while cut > 1 and text:byte(cut + 1) and text:byte(cut + 1) >= 0x80 and text:byte(cut + 1) < 0xC0 do
+                cut = cut - 1
+            end
+            nextStart = cut + 1
+        end
+        parts[#parts + 1] = strtrim(text:sub(1, cut))
+        text = strtrim(text:sub(nextStart))
+    end
+    if text ~= "" then parts[#parts + 1] = text end
+    return parts
+end
+
+-- ---------------------------------------------------------------------------
 -- Unread totals
 -- ---------------------------------------------------------------------------
 

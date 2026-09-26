@@ -43,3 +43,11 @@
 - Stays pinned to the bottom when new messages arrive; keeps position when scrolled up. Messages that arrive while the window is hidden are unread until you open it.
 - Shared thin scrollbar widget for list and conversation.
 - Test command: `/hush fakeconvo [name]`.
+
+### Step 6 – Input
+- `UI/Input.lua`: message field + accent Send button; Enter sends and keeps focus. Works for whispers and Battle.net whispers (group chats in step 8).
+- Messages over 255 characters are split at word boundaries, never inside a link or a multi-byte character; a counter shows "N messages" while typing.
+- Shift-clicked links (bags, spells, quests, links in Hush) are inserted into the Hush field while it has focus.
+- Quick replies as buttons above the field (`{name}` = the other player's name): click fills the field, shift-click sends.
+- "New message" (+): type a character name in the header to open or start a conversation (reuses an existing one regardless of letter case).
+- Default-chat filter is now active: whispers are hidden there outside combat and `/r` still works. `/hush filter` toggles it (saved).

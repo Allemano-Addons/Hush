@@ -94,6 +94,8 @@ local function onWhisper(event, text, sender, _, _, _, flags, _, _, _, _, _, gui
     })
     if incoming then
         Hush.char.lastWhisper = key
+        -- Keep /r in the default chat working even when the whisper was hidden there.
+        Compat.SetLastTellTarget(name, "WHISPER")
         if not roster[name] then requestRoster() end
     end
 end
@@ -113,7 +115,10 @@ local function onBNWhisper(event, text, _, _, _, _, _, _, _, _, _, _, _, bnID)
     conv.bnID = bnID -- session-local, refreshed on every message
 
     Data.AddMessage(key, { d = incoming and "in" or "out", m = text, s = incoming and conv.display or nil })
-    if incoming then Hush.char.lastWhisper = key end
+    if incoming then
+        Hush.char.lastWhisper = key
+        if bn.name then Compat.SetLastTellTarget(bn.name, "BN_WHISPER") end
+    end
 end
 
 -- AFK/DND auto-replies and "player not found" become discreet system lines.
@@ -270,10 +275,11 @@ Hush:AddSlashCommand("move", function(arg)
     if key and Data.Move(key, strlower(cat)) then Hush:Print("Moved", key, "to", cat) else Hush:Print("Usage: /hush move <name> <guild|recruits|other>") end
 end, "move a conversation: /hush move <name> <category>")
 
-Hush:AddSlashCommand("filtertest", function()
-    Hush.canDisplay = not Hush.canDisplay
-    Hush:Print("Default-chat whisper hiding is now", Hush.canDisplay and "ACTIVE (until /reload)" or "inactive")
-end, "toggle whisper hiding in the default chat for testing")
+Hush:AddSlashCommand("filter", function()
+    Hush.settings.hideWhispers = not Hush.settings.hideWhispers
+    Hush:Print("Hide whispers in the default chat:", Hush.settings.hideWhispers and "ON (never in combat)" or "OFF")
+    Hush:Fire("SETTINGS_CHANGED", "hideWhispers")
+end, "toggle hiding whispers in the default chat")
 
 local FAKE_NAMES = { "Aldric", "Brynja", "Cedwyn", "Dagny", "Eirik", "Freja", "Gunnar", "Hilda", "Ivar", "Jorunn",
     "Kettil", "Liv", "Magnus", "Nanna", "Orm", "Pernilla", "Ragnar", "Sigrid", "Torvald", "Ulla", "Vidar", "Ylva",
@@ -337,3 +343,6 @@ Hush:AddSlashCommand("fakeconvo", function(arg)
     end
     Hush:Print("Created a test conversation with", name, "- open /hush and select it.")
 end, "create a test conversation: /hush fakeconvo [name]")
+
+-- Hush can show whispers from now on, so the default-chat filter may hide them.
+Hush:RegisterCallback("READY", function() Hush.canDisplay = true end, "Chat")
