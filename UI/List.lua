@@ -382,23 +382,25 @@ end
 
 -- Which category is under the mouse (MouseIsOver on the visible pooled frames).
 local function targetUnderMouse()
-    if not MouseIsOver(area) then return nil end
+    if not Compat.MouseIsOver(area) then return nil end
     for _, c in ipairs(catPool.active) do
-        if MouseIsOver(c) then return c.id end
+        if Compat.MouseIsOver(c) then return c.id end
     end
     for _, r in ipairs(rowPool.active) do
-        if MouseIsOver(r) then return r.catId end
+        if Compat.MouseIsOver(r) then return r.catId end
     end
     return nil
 end
 
 local function finishDrag()
     if not drag then return end
+    -- Reset first so an error below can never leave Hush stuck in drag mode.
+    local key = drag.key
+    drag = nil
     ghost:SetScript("OnUpdate", nil)
     ghost:Hide()
     dropHL:Hide()
-    local key, target = drag.key, targetUnderMouse()
-    drag = nil
+    local target = targetUnderMouse()
     local conv = Data.Get(key)
     if not conv or not target then return end
     if target == "pinned" then
@@ -437,7 +439,7 @@ function List.StartDrag(key)
         self:SetPoint("LEFT", UIParent, "BOTTOMLEFT", x / scale + 12, y / scale)
 
         local ay = y / area:GetEffectiveScale()
-        if MouseIsOver(area) then
+        if Compat.MouseIsOver(area) then
             if ay > area:GetTop() - 24 then
                 List.SetOffset(offset - 8)
             elseif ay < area:GetBottom() + 24 then
@@ -451,7 +453,7 @@ function List.StartDrag(key)
     end)
 end
 
-function List.IsDragging() return drag ~= nil end
+function List.IsDragging() return drag ~= nil and ghost ~= nil and ghost:IsShown() end
 
 -- ---------------------------------------------------------------------------
 -- Selection

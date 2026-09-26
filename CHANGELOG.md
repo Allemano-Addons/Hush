@@ -72,3 +72,4 @@
 - Right-click menu on chats: Move to…, Pin/Unpin, Mark as read, Invite to group, Guild invite, Delete chat (with confirmation). Moving a request accepts it. Also on the new "…" button in the header.
 - Right-click menu on category headers.
 - Own flat widgets: context menu with submenus (no UIDropDownMenu, closes on click outside), in-window dialog for prompts and confirmations, dashed border.
+- Fix: drag and drop and the chat menu did nothing on WoW Forever. The global `MouseIsOver()` is missing there, so a failed drop left Hush stuck in drag mode and blocked the chat menu. Now uses `frame:IsMouseOver()` via `Compat.MouseIsOver`, and drag state is reset before anything else on drop.

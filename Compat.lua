@@ -16,6 +16,7 @@ Compat.features = {
     C_Timer = C_Timer ~= nil,
     ChatFilter = type(ChatFrame_AddMessageEventFilter) == "function",
     PhysicalScreenSize = type(GetPhysicalScreenSize) == "function",
+    MouseIsOverGlobal = type(MouseIsOver) == "function",
 }
 
 -- ---------------------------------------------------------------------------
@@ -277,6 +278,15 @@ function Compat.GetAddOnMetadata(addon, field)
         return C_AddOns.GetAddOnMetadata(addon, field)
     end
     return GetAddOnMetadata(addon, field)
+end
+
+-- Is the mouse over a frame/region? The global MouseIsOver() is missing on WoW Forever,
+-- the IsMouseOver method is what exists there.
+function Compat.MouseIsOver(region)
+    if not region or not region:IsVisible() then return false end
+    if region.IsMouseOver then return region:IsMouseOver() end
+    if MouseIsOver then return MouseIsOver(region) end
+    return false
 end
 
 function Compat.InCombat()

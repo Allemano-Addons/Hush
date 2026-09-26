@@ -23,7 +23,7 @@ read_globals = {
 
     -- Frames and UI
     "CreateFrame", "UIParent", "DEFAULT_CHAT_FRAME", "BackdropTemplateMixin",
-    "GetCursorPosition", "MouseIsOver", "PlaySound", "PlaySoundFile", "SOUNDKIT",
+    "GetCursorPosition", "PlaySound", "PlaySoundFile", "SOUNDKIT",
     "GameTooltip", "SetItemRef", "ChatEdit_InsertLink", "ChatFrame_AddMessageEventFilter",
     "ChatFrame_RemoveMessageEventFilter", "ChatFrame_SendTell",
 
@@ -39,6 +39,6 @@ read_globals = {
     "ERR_CHAT_PLAYER_NOT_FOUND_S",
     "SendChatMessage", "BNSendWhisper", "BNGetNumFriends", "BNGetFriendInfo",
     "ChatFrameUtil", "ChatEdit_SetLastTellTarget", "hooksecurefunc", "IsShiftKeyDown",
-    "MouseIsOver", "IsMouseButtonDown", "InviteUnit", "GuildInvite", "CanGuildInvite", "C_PartyInfo",
+    "MouseIsOver", "MouseIsOver", "IsMouseButtonDown", "InviteUnit", "GuildInvite", "CanGuildInvite", "C_PartyInfo",
     "IsInRaid", "IsInGroup", "GetNumRaidMembers", "GetNumPartyMembers", "GetNumGroupMembers",
 }
