@@ -25,6 +25,8 @@ local PAD_RIGHT = 28       -- room for the scrollbar
 local PORTRAIT = 30
 local GROUP_WINDOW = 300   -- messages from the same sender within 5 min are grouped
 local DAY_H, NEW_H = 34, 22
+local BPX, BPY = 10, 6          -- bubble padding
+local BUBBLE_MAX = 0.72        -- bubble max width, share of the text area
 
 -- ---------------------------------------------------------------------------
 -- Layout helpers
@@ -32,6 +34,7 @@ local DAY_H, NEW_H = 34, 22
 
 local function showPortraits() return Hush.settings.portraits ~= false end
 local function showTimes() return Hush.settings.timestamps ~= false end
+local function bubbles() return Hush.settings.msgStyle == "bubbles" end
 
 local function textLeft()
     return PAD_X + (showPortraits() and (PORTRAIT + 12) or 0)
@@ -111,10 +114,14 @@ local function build()
         else
             local sender = m.d == "out" and "\1me" or (m.s or conv.display)
             local grouped = sender == lastSender and lastT and (m.t - lastT) < GROUP_WINDOW
-            local textH = measureText(m, width, 0)
-            local h = grouped and (textH + 4) or (10 + headerH + 2 + textH + 4)
-            if not grouped and showPortraits() then h = max(h, 10 + PORTRAIT + 4) end
-            items[#items + 1] = { kind = "msg", y = y, h = h, msg = m, conv = conv, grouped = grouped, textH = textH }
+            local bubble = bubbles()
+            local w = bubble and (floor(width * BUBBLE_MAX) - 2 * BPX) or width
+            local textH = measureText(m, w, 0)
+            local pad = bubble and (2 * BPY + 2) or 0
+            local h = grouped and (textH + 4 + pad) or (10 + headerH + 2 + textH + 4 + pad)
+            if not grouped and showPortraits() and not (bubble and m.d == "out") then h = max(h, 10 + PORTRAIT + 4) end
+            items[#items + 1] = { kind = "msg", y = y, h = h, msg = m, conv = conv, grouped = grouped,
+                                  textH = textH, textW = w, bubble = bubble }
             y = y + h
             lastSender, lastT = sender, m.t
         end
@@ -168,7 +175,7 @@ local function createMsg()
 
     f.name = W.Text(f, "semibold", 0)
     f.time = W.Text(f, "regular", -2, "textFaint")
-    f.time:SetPoint("LEFT", f.name, "RIGHT", 8, 0)
+    f.bubble = f:CreateTexture(nil, "BACKGROUND")
 
     f.text = W.Text(f, "regular", 0, "text")
     f.text:SetWordWrap(true)
@@ -181,15 +188,16 @@ local function fillMsg(f, it)
     local m = it.msg
     local left = textLeft()
     local name, r, g, b = senderOf(it.conv, m)
+    local mine = it.bubble and m.d == "out"   -- own bubbles sit on the right, without name/portrait
+    local headerH = Theme:TextSize(0) + 4
 
-    f.box:SetShown(not it.grouped and showPortraits())
-    f.name:SetShown(not it.grouped)
+    f.box:SetShown(not it.grouped and showPortraits() and not mine)
+    f.name:SetShown(not it.grouped and not mine)
     f.time:SetShown(not it.grouped and showTimes())
 
-    f.text:ClearAllPoints()
-    if it.grouped then
-        f.text:SetPoint("TOPLEFT", left, -2)
-    else
+    -- Header: name + time (compact and incoming bubbles), or only time on the right (own bubbles).
+    f.time:ClearAllPoints()
+    if not it.grouped then
         f.initial:SetText(strupper((name or "?"):match("^[%z\1-\127\194-\244][\128-\191]*") or "?"))
         f.initial:SetTextColor(r, g, b)
         f.name:ClearAllPoints()
@@ -197,12 +205,46 @@ local function fillMsg(f, it)
         f.name:SetText(name)
         f.name:SetTextColor(r, g, b)
         f.time:SetText(date("%H:%M", m.t) .. (m.k == "leader" and "  ·  Leader" or m.k == "warning" and "  ·  Raid warning" or ""))
-        f.text:SetPoint("TOPLEFT", f.name, "BOTTOMLEFT", 0, -2)
+        if mine then
+            f.time:SetPoint("TOPRIGHT", -PAD_RIGHT, -10)
+        else
+            f.time:SetPoint("LEFT", f.name, "RIGHT", 8, 0)
+        end
     end
-    f.text:SetWidth(textWidth())
+
+    f.text:ClearAllPoints()
+    f.text:SetWidth(it.textW)
     f.text:SetHeight(it.textH)
     f.text:SetText(m.m)
     f.text:SetTextColor(Theme:Color(m.k == "gm" and "bnet" or m.k == "warning" and "warning" or "text"))
+
+    if not it.bubble then
+        f.bubble:Hide()
+        if it.grouped then
+            f.text:SetPoint("TOPLEFT", left, -2)
+        else
+            f.text:SetPoint("TOPLEFT", f.name, "BOTTOMLEFT", 0, -2)
+        end
+        return
+    end
+
+    -- Bubble: shrink to the text (GetStringWidth is the unwrapped width, capped at the max).
+    local w = min(it.textW, ceil(f.text:GetStringWidth()) + 1)
+    f.text:SetWidth(w)
+    local top = it.grouped and -(2 + BPY) or -(10 + headerH + 2 + BPY)
+    if mine then
+        f.text:SetPoint("TOPRIGHT", -PAD_RIGHT - BPX, top)
+        f.bubble:SetColorTexture(Theme:Accent())
+        f.bubble:SetAlpha(0.22)
+    else
+        f.text:SetPoint("TOPLEFT", left + BPX, top)
+        f.bubble:SetColorTexture(Theme:Color("field"))
+        f.bubble:SetAlpha(1)
+    end
+    f.bubble:ClearAllPoints()
+    f.bubble:SetPoint("TOPLEFT", f.text, "TOPLEFT", -BPX, BPY)
+    f.bubble:SetPoint("BOTTOMRIGHT", f.text, "BOTTOMRIGHT", BPX, -BPY)
+    f.bubble:Show()
 end
 
 local function createDay()
@@ -411,5 +453,7 @@ Hush:RegisterCallback("WINDOW_SHOWN", function()
 end, "Conversation")
 
 Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
-    if key == "textSize" or key == "timestamps" or key == "portraits" then Conv.Refresh(atBottom()) end
+    if key == "textSize" or key == "timestamps" or key == "portraits" or key == "msgStyle" or key == "accent" or key == "useClassColor" then
+        Conv.Refresh(atBottom())
+    end
 end, "Conversation")

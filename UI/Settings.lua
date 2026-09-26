@@ -1,0 +1,481 @@
+-- Settings: own panel in the Hush style. Left menu with pages, "Unlock & move" and
+-- "Clear all chats" at the bottom. Modules can add pages with Settings.AddPage.
+local _, Hush = ...
+
+local Theme, W, Data = Hush.Theme, Hush.Widgets, Hush.Data
+local S = Theme.size
+
+local Settings = {}
+Hush.Settings = Settings
+
+local WIDTH, HEIGHT, MENU_W = 760, 540, 190
+local PAD = 28
+
+local frame
+local pages = {}      -- { id, label, build, frame }
+local current
+local moveMode = false
+
+-- Change a setting and tell everyone.
+function Settings.Set(key, value)
+    Hush.settings[key] = value
+    Hush:Fire("SETTINGS_CHANGED", key, value)
+end
+
+local function get(key) return function() return Hush.settings[key] end end
+local function set(key) return function(v) Settings.Set(key, v) end end
+
+-- ---------------------------------------------------------------------------
+-- Page builder
+-- ---------------------------------------------------------------------------
+
+local Page = {}
+Page.__index = Page
+
+local function newPage(parent, label)
+    local f = CreateFrame("Frame", nil, parent)
+    f:SetAllPoints()
+    f:Hide()
+    local p = setmetatable({ frame = f, y = -24, refreshers = {} }, Page)
+    local title = W.Text(f, "heading", 5, "text")
+    title:SetPoint("TOPLEFT", PAD, p.y)
+    title:SetText(strupper(label))
+    p.y = p.y - 40
+    return p
+end
+
+function Page:Header(text)
+    self.y = self.y - 8
+    local fs = W.Text(self.frame, "heading", -1, "textFaint")
+    fs:SetPoint("TOPLEFT", PAD, self.y)
+    fs:SetText(strupper(text))
+    self.y = self.y - 22
+end
+
+function Page:Text(text)
+    local fs = W.Text(self.frame, "regular", -1, "textDim")
+    fs:SetPoint("TOPLEFT", PAD, self.y)
+    fs:SetWidth(WIDTH - MENU_W - PAD * 2)
+    fs:SetWordWrap(true)
+    fs:SetText(text)
+    self.y = self.y - fs:GetStringHeight() - 12
+    return fs
+end
+
+-- A labeled row with a control on the right.
+function Page:Row(label, desc, control)
+    local top = self.y
+    local fs = W.Text(self.frame, "semibold", 0, "text")
+    fs:SetPoint("TOPLEFT", PAD, top - 4)
+    fs:SetText(label)
+    local h = 30
+    if desc then
+        local d = W.Text(self.frame, "regular", -2, "textFaint")
+        d:SetPoint("TOPLEFT", fs, "BOTTOMLEFT", 0, -4)
+        d:SetText(desc)
+        h = 44
+    end
+    control:SetParent(self.frame)
+    control:ClearAllPoints()
+    control:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -PAD - (control.rightPad or 0), top - 4)
+    local line = W.Fill(self.frame, "line", 1, "BORDER")
+    line:SetPoint("TOPLEFT", PAD, top - h - 4)
+    line:SetPoint("TOPRIGHT", -PAD, top - h - 4)
+    W.PixelSize(line, self.frame, "h")
+    self.y = top - h - 12
+end
+
+function Page:Toggle(label, desc, getter, setter)
+    local t = W.Toggle(self.frame, setter)
+    self:Row(label, desc, t)
+    self.refreshers[#self.refreshers + 1] = function() t:Set(getter()) end
+    return t
+end
+
+function Page:Segment(label, desc, options, getter, setter)
+    local s = W.Segment(self.frame, options, setter)
+    self:Row(label, desc, s)
+    self.refreshers[#self.refreshers + 1] = function() s:Set(getter()) end
+    return s
+end
+
+function Page:Slider(label, desc, minV, maxV, step, fmt, getter, setter)
+    local s = W.Slider(self.frame, minV, maxV, step, 180, fmt, setter)
+    s.rightPad = 44 -- room for the value label
+    self:Row(label, desc, s)
+    self.refreshers[#self.refreshers + 1] = function() s:Set(getter()) end
+    return s
+end
+
+function Page:Button(label, desc, buttonText, style, onClick)
+    local b = W.Button(self.frame, buttonText, style or "default", onClick)
+    self:Row(label, desc, b)
+    return b
+end
+
+-- Free-form block: fn(container) builds inside a frame of the given height.
+function Page:Custom(height, fn)
+    local c = CreateFrame("Frame", nil, self.frame)
+    c:SetPoint("TOPLEFT", PAD, self.y)
+    c:SetPoint("TOPRIGHT", -PAD, self.y)
+    c:SetHeight(height)
+    local refresh = fn(c)
+    if refresh then self.refreshers[#self.refreshers + 1] = refresh end
+    self.y = self.y - height - 12
+    return c
+end
+
+function Page:Refresh()
+    for _, r in ipairs(self.refreshers) do r() end
+end
+
+-- ---------------------------------------------------------------------------
+-- Built-in pages
+-- ---------------------------------------------------------------------------
+
+local CLASS_ORDER = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
+
+local function buildGeneral(p)
+    p:Header("Launcher")
+    p:Toggle("Show launcher button", "The small Hush button with the unread badge.",
+        function() return not Hush.db.launcher.hidden end,
+        function(v) Hush.Launcher.SetHidden(not v) end)
+    p:Toggle("Lock launcher position", nil,
+        function() return Hush.db.launcher.locked == true end,
+        function(v) Hush.db.launcher.locked = v end)
+    p:Header("Window")
+    p:Button("Window position and size", "Move the Hush window back to the center at 1000×620.", "Reset", "default",
+        function() Hush.Main.ResetPosition() end)
+    p:Header("About")
+    p:Text("Hush " .. tostring(Hush.version) .. " for WoW Forever.  /hush opens and closes the window, /hush help lists all commands. "
+        .. "Key bindings: Key Bindings → AddOns → Hush.")
+end
+
+local function buildAppearance(p)
+    p:Header("Accent color")
+    p:Custom(26, function(c)
+        local swatches = {}
+        local function select()
+            local s = Hush.settings
+            for _, sw in ipairs(swatches) do
+                sw:SetSelected(not s.useClassColor and strupper(s.accent) == sw.hex)
+            end
+        end
+        local function add(hexStr, tooltip)
+            local r, g, b = Theme.Hex(hexStr)
+            local sw = W.Swatch(c, r, g, b, tooltip, function()
+                Settings.Set("useClassColor", false)
+                Settings.Set("accent", hexStr)
+                select()
+                p:Refresh()
+            end)
+            sw.hex = hexStr
+            sw:SetPoint("LEFT", (#swatches) * 28, 0)
+            swatches[#swatches + 1] = sw
+        end
+        add("3FC7EB", "Hush")
+        for _, class in ipairs(CLASS_ORDER) do
+            local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+            if color then
+                local hexStr = ("%02X%02X%02X"):format(floor(color.r * 255 + 0.5), floor(color.g * 255 + 0.5), floor(color.b * 255 + 0.5))
+                local name = LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[class] or class
+                add(hexStr, name)
+            end
+        end
+        return select
+    end)
+    p:Toggle("Use my class color", "Follows the class of the character you are playing.",
+        get("useClassColor"), set("useClassColor"))
+    p:Slider("Background opacity", nil, 50, 100, 5,
+        function(v) return v .. "%" end,
+        function() return floor((Hush.settings.bgAlpha or 0.95) * 100 + 0.5) end,
+        function(v) Settings.Set("bgAlpha", v / 100) end)
+    p:Segment("Text size", nil,
+        { { value = "S", label = "S" }, { value = "M", label = "M" }, { value = "L", label = "L" } },
+        get("textSize"), set("textSize"))
+    p:Segment("Message style", nil,
+        { { value = "compact", label = "Compact" }, { value = "bubbles", label = "Bubbles" } },
+        get("msgStyle"), set("msgStyle"))
+    p:Toggle("Show portraits", "Initials in class color next to messages.", get("portraits"), set("portraits"))
+    p:Toggle("Show timestamps", "24-hour time next to each sender.", get("timestamps"), set("timestamps"))
+end
+
+local function buildBehavior(p)
+    p:Toggle("Hide whispers in the default chat", "Never while in combat. Everything is always saved in Hush.",
+        get("hideWhispers"), set("hideWhispers"))
+    p:Toggle("Hide Hush in combat", "Opens again after combat if it was open.", get("hideInCombat"), set("hideInCombat"))
+    p:Toggle("Open on incoming whisper", "Not in combat and not for Requests. Never takes keyboard focus.",
+        get("autoOpenIn"), set("autoOpenIn"))
+    p:Toggle("Open on outgoing whisper", "When you whisper someone from the default chat.",
+        get("autoOpenOut"), set("autoOpenOut"))
+    p:Toggle("Dim the window while moving", "Fades Hush while your character runs, unless you are typing in it.",
+        get("fadeWhenMoving"), set("fadeWhenMoving"))
+end
+
+local function buildNotifications(p)
+    p:Toggle("Sound on new whisper", "Never in combat.", get("sound"), set("sound"))
+    local options = {}
+    for _, s in ipairs(Hush.Notify.SOUNDS) do options[#options + 1] = { value = s.id, label = s.label } end
+    p:Segment("Sound", "Plays when you pick it.", options, get("soundKey"), function(v)
+        Settings.Set("soundKey", v)
+        Hush.Notify.PlaySound(v)
+    end)
+    p:Toggle("Combat summary", "\"3 whispers during combat\" after combat, click to open.",
+        get("combatToast"), set("combatToast"))
+    p:Button("Preview", nil, "Show", "default", function()
+        Hush.Toast.Show("2 whispers during combat", "From Sigrid and Ivar  ·  click to open")
+    end)
+end
+
+local function buildQuickReplies(p)
+    p:Text("Up to 10 replies, shown as buttons above the message field. {name} is replaced with the "
+        .. "other player's name. Click fills the field, shift-click sends.")
+    p:Custom(10 * 34, function(c)
+        local boxes = {}
+        local function save()
+            local list = {}
+            for i, box in ipairs(boxes) do list[i] = strtrim(box:GetText() or "") end
+            Hush.db.quickReplies = list
+            Hush:Fire("QUICK_REPLIES_CHANGED")
+        end
+        for i = 1, 10 do
+            local e = W.EditBox(c, "Reply " .. i, 28)
+            e:SetPoint("TOPLEFT", 0, -(i - 1) * 34)
+            e:SetPoint("TOPRIGHT", 0, -(i - 1) * 34)
+            e:SetMaxLetters(200)
+            e:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+            e:HookScript("OnEditFocusLost", save)
+            e:SetScript("OnTabPressed", function() if boxes[i + 1] then boxes[i + 1]:SetFocus() end end)
+            boxes[i] = e
+        end
+        return function()
+            for i, box in ipairs(boxes) do box:SetText(Hush.db.quickReplies[i] or "") end
+        end
+    end)
+end
+
+-- ---------------------------------------------------------------------------
+-- Frame
+-- ---------------------------------------------------------------------------
+
+local function savePosition()
+    local d = Hush.db.settingsWindow
+    d.left = Theme:Snap(frame:GetLeft(), frame)
+    d.top = Theme:Snap(frame:GetTop(), frame)
+end
+
+local function restorePosition()
+    local d = Hush.db.settingsWindow
+    frame:ClearAllPoints()
+    if d.left and d.top then
+        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", d.left, d.top)
+    else
+        frame:SetPoint("CENTER", 0, 20)
+    end
+end
+
+local function updateMenu()
+    for _, pg in ipairs(pages) do
+        local b = pg.menuButton
+        local active = pg == current
+        b.sel:SetShown(active)
+        b.bar:SetShown(active)
+        b.text:SetTextColor(Theme:Color(active and "text" or "textDim"))
+    end
+end
+
+function Settings.ShowPage(id)
+    for _, pg in ipairs(pages) do
+        if pg.id == id then
+            if not pg.page then
+                pg.page = newPage(frame.content, pg.label)
+                local ok, err = pcall(pg.build, pg.page)
+                if not ok then geterrorhandler()(err) end
+            end
+            if current and current.page then current.page.frame:Hide() end
+            current = pg
+            pg.page:Refresh()
+            pg.page.frame:Show()
+            updateMenu()
+            return
+        end
+    end
+end
+
+local function addMenuButton(pg)
+    local b = CreateFrame("Button", nil, frame.menu)
+    b:SetHeight(32)
+    b.sel = W.Fill(b, "selected", 1)
+    b.sel:SetAllPoints()
+    b.sel:Hide()
+    b.bar = b:CreateTexture(nil, "ARTWORK")
+    b.bar:SetPoint("TOPLEFT")
+    b.bar:SetPoint("BOTTOMLEFT")
+    W.PixelSize(b.bar, b, "w", 2)
+    W.OnAccent(function(r, g, bl) b.bar:SetColorTexture(r, g, bl, 1) end)
+    b.bar:Hide()
+    b.text = W.Text(b, "semibold", 0, "textDim")
+    b.text:SetPoint("LEFT", S.padding + 4, 0)
+    b.text:SetText(pg.label)
+    b:SetScript("OnClick", function() Settings.ShowPage(pg.id) end)
+    b:SetScript("OnEnter", function(self) if pg ~= current then self.text:SetTextColor(Theme:Color("text")) end end)
+    b:SetScript("OnLeave", function() updateMenu() end)
+    pg.menuButton = b
+end
+
+local function layoutMenu()
+    for i, pg in ipairs(pages) do
+        if not pg.menuButton then addMenuButton(pg) end
+        pg.menuButton:ClearAllPoints()
+        pg.menuButton:SetPoint("TOPLEFT", 0, -S.titleH - 8 - (i - 1) * 32)
+        pg.menuButton:SetPoint("TOPRIGHT", 0, -S.titleH - 8 - (i - 1) * 32)
+    end
+end
+
+local function setMoveMode(on)
+    moveMode = on
+    Hush.Toast.SetMoveMode(on)
+    frame.moveButton.text:SetText(on and "Lock" or "Unlock & move")
+end
+
+local function build()
+    frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetSize(WIDTH, HEIGHT)
+    frame:SetFrameStrata("HIGH")
+    frame:SetToplevel(true)
+    frame:SetClampedToScreen(true)
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:Hide()
+    frame.bg = W.Fill(frame, "window", 0.98)
+    frame.bg:SetAllPoints()
+
+    local menu = CreateFrame("Frame", nil, frame)
+    menu:SetPoint("TOPLEFT")
+    menu:SetPoint("BOTTOMLEFT")
+    menu:SetWidth(MENU_W)
+    menu.bg = W.Fill(menu, "sidebar", 1)
+    menu.bg:SetAllPoints()
+    W.Line(menu, "right", "line")
+    frame.menu = menu
+
+    -- Title row (drag to move)
+    local title = CreateFrame("Frame", nil, menu)
+    title:SetPoint("TOPLEFT")
+    title:SetPoint("TOPRIGHT")
+    title:SetHeight(S.titleH)
+    title:EnableMouse(true)
+    title:RegisterForDrag("LeftButton")
+    title:SetScript("OnDragStart", function() frame:StartMoving() end)
+    title:SetScript("OnDragStop", function()
+        frame:StopMovingOrSizing()
+        savePosition()
+        restorePosition()
+    end)
+    local square = title:CreateTexture(nil, "ARTWORK")
+    square:SetSize(10, 10)
+    square:SetPoint("LEFT", S.padding, 0)
+    W.OnAccent(function(r, g, b) square:SetColorTexture(r, g, b, 1) end)
+    local name = W.Text(title, "heading", 3, "text")
+    name:SetPoint("LEFT", square, "RIGHT", 8, 0)
+    name:SetText("SETTINGS")
+
+    -- Bottom buttons
+    local clear = W.Button(menu, "Clear all chats", "ghost", function()
+        W.Dialog(frame, {
+            title = "Clear all chats",
+            text = "Delete every conversation and its history for this character? Categories and settings are kept.",
+            okText = "Clear all",
+            danger = true,
+            onOk = function() Data.ClearAll() end,
+        })
+    end)
+    clear:SetPoint("BOTTOMLEFT", S.padding - 8, 12)
+    clear.text:SetTextColor(Theme:Color("danger"))
+    clear:SetScript("OnLeave", function(self) self.text:SetTextColor(Theme:Color("danger")) end)
+
+    local move = W.Button(menu, "Unlock & move", "default", function() setMoveMode(not moveMode) end)
+    move:SetPoint("BOTTOMLEFT", S.padding, 48)
+    move:SetPoint("BOTTOMRIGHT", -S.padding, 48)
+    frame.moveButton = move
+    local moveHint = W.Text(menu, "regular", -2, "textFaint")
+    moveHint:SetPoint("BOTTOMLEFT", move, "TOPLEFT", 0, 6)
+    moveHint:SetText("Move the combat notice")
+
+    -- Content area
+    local content = CreateFrame("Frame", nil, frame)
+    content:SetPoint("TOPLEFT", menu, "TOPRIGHT")
+    content:SetPoint("BOTTOMRIGHT")
+    frame.content = content
+
+    local close = W.IconButton(frame, "close", 24, "Close", function() frame:Hide() end, "x")
+    close:SetPoint("TOPRIGHT", -8, -8)
+    close:SetFrameLevel(content:GetFrameLevel() + 20)
+
+    frame.border = W.Border(frame, "line")
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do frame.border[side]:SetDrawLayer("OVERLAY", 7) end
+
+    -- ESC closes (same safe keyboard handling as the main window).
+    frame:SetScript("OnKeyDown", function(self, key)
+        if key == "ESCAPE" and not InCombatLockdown() then
+            self:SetPropagateKeyboardInput(false)
+            self:Hide()
+        end
+    end)
+    frame:SetScript("OnShow", function(self)
+        if not InCombatLockdown() then
+            self:EnableKeyboard(true)
+            self:SetPropagateKeyboardInput(true)
+        end
+    end)
+    frame:SetScript("OnHide", function(self)
+        self:EnableKeyboard(false)
+        if moveMode then setMoveMode(false) end
+        W.CloseMenus()
+    end)
+    Hush:RegisterEvent("PLAYER_REGEN_DISABLED", function() frame:EnableKeyboard(false) end)
+    Hush:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+        if frame:IsShown() then
+            frame:EnableKeyboard(true)
+            frame:SetPropagateKeyboardInput(true)
+        end
+    end)
+
+    restorePosition()
+    layoutMenu()
+end
+
+-- def: { id, label, build = function(page) ... end }
+function Settings.AddPage(def)
+    assert(type(def) == "table" and def.id and def.label and def.build, "Settings.AddPage: id, label and build are required")
+    for _, pg in ipairs(pages) do
+        if pg.id == def.id then return end
+    end
+    pages[#pages + 1] = { id = def.id, label = def.label, build = def.build }
+    if frame then layoutMenu() end
+end
+
+function Settings.Open(id)
+    if not Hush.ready then return end
+    if not frame then build() end
+    frame:Show()
+    Settings.ShowPage(id or (current and current.id) or pages[1].id)
+end
+
+function Settings.Toggle()
+    if frame and frame:IsShown() then frame:Hide() else Settings.Open() end
+end
+
+Settings.AddPage({ id = "general", label = "General", build = buildGeneral })
+Settings.AddPage({ id = "appearance", label = "Appearance", build = buildAppearance })
+Settings.AddPage({ id = "behavior", label = "Behavior", build = buildBehavior })
+Settings.AddPage({ id = "notifications", label = "Notifications", build = buildNotifications })
+Settings.AddPage({ id = "quickreplies", label = "Quick replies", build = buildQuickReplies })
+
+Hush:RegisterCallback("OPEN_SETTINGS", function() Settings.Toggle() end, "Settings")
+Hush:AddSlashCommand("settings", function(arg) Settings.Open(arg ~= "" and arg or nil) end, "open the settings")
+
+-- Keep the "Show launcher" toggle etc. in sync when changed elsewhere.
+Hush:RegisterCallback("SETTINGS_CHANGED", function()
+    if frame and frame:IsShown() and current and current.page then current.page:Refresh() end
+end, "Settings")

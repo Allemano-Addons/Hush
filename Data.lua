@@ -208,6 +208,15 @@ function Data.Delete(key)
     Hush:Fire("UNREAD_CHANGED")
 end
 
+-- Deletes every conversation of this character. Categories and settings are kept.
+function Data.ClearAll()
+    local keys = {}
+    for key in pairs(Data.All()) do keys[#keys + 1] = key end
+    for _, key in ipairs(keys) do Data.Delete(key) end
+    Hush.char.lastWhisper = nil
+    if Hush.char.group then Hush.char.group.key = nil end
+end
+
 -- Module data per conversation: Data.ModData(key, "Hush_Recruit") -> table (created on demand).
 function Data.ModData(key, module)
     local conv = Data.Get(key)

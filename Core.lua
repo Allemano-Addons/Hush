@@ -154,6 +154,8 @@ local function initDB()
     db.window = db.window or {}
     fillDefaults(db.window, { w = 1000, h = 620 })
     db.launcher = db.launcher or {}
+    db.settingsWindow = db.settingsWindow or {}
+    db.toast = db.toast or {}
     db.chars = db.chars or {}
 
     Hush.db = db

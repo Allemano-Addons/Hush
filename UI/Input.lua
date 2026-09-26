@@ -214,6 +214,10 @@ function Input.Focus()
     if edit and footer:IsShown() then edit:SetFocus() end
 end
 
+function Input.HasFocus()
+    return edit ~= nil and edit:HasFocus()
+end
+
 -- ---------------------------------------------------------------------------
 -- Events
 -- ---------------------------------------------------------------------------

@@ -80,3 +80,15 @@
 - Public API: `Hush.Toggle()`, `Hush.Open(key, focus)`, `Hush.ReplyLast()`.
 - Online status of guild members and friends updates immediately from "has come online" / "has gone offline" messages.
 - "Invite to group" is disabled with "(offline)" when the player is known to be offline (WoW Forever answers such invites with a misleading "Cannot find player" naming another character with the same first name).
+
+### Step 11 – Settings
+- `UI/Settings.lua`: own settings panel in the Hush style (movable, position saved, ESC closes). Left menu with General, Appearance, Behavior, Notifications, Quick replies; "Unlock & move" and "Clear all chats" (with confirmation) at the bottom. Opens from the title button, the launcher menu or `/hush settings`.
+- General: show/lock launcher, reset window position, about.
+- Appearance: accent color swatches (Hush + class colors) and "Use my class color", background opacity, text size S/M/L, message style Compact/Bubbles, portraits, timestamps. Everything updates live.
+- Behavior: hide whispers in the default chat, hide in combat, open on incoming/outgoing whisper, dim the window while moving (event-driven, not while typing or hovering).
+- Notifications: sound on/off and choice with preview, combat summary with preview.
+- Quick replies: 10 editable replies.
+- "Unlock & move" shows a draggable sample of the combat notice; its position is saved.
+- Bubbles message style: own messages right-aligned in an accent-tinted bubble, others left in a dark bubble, sized to the text.
+- New widgets: toggle switch, segmented control, slider, color swatch. Page builder usable by modules (`Settings.AddPage`).
+- Fix: tooltip background was never anchored, so tooltips had no background.

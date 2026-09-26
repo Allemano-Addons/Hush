@@ -427,11 +427,36 @@ end, "Main")
 Hush:RegisterCallback("UNREAD_CHANGED", function() Main.UpdateBadges() end, "Main")
 Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
     if key == "bgAlpha" then Main.ApplyBackgroundAlpha() end
+    if key == "fadeWhenMoving" and frame then frame:SetAlpha(1) end
 end, "Main")
 
-Hush:AddSlashCommand("reset", function()
+function Main.ResetPosition()
     Hush.db.window.left, Hush.db.window.top = nil, nil
     Hush.db.window.w, Hush.db.window.h = S.windowW, S.windowH
     if frame then restorePosition() end
     Hush:Print("Window position and size reset.")
-end, "reset window position and size")
+end
+
+Hush:AddSlashCommand("reset", Main.ResetPosition, "reset window position and size")
+
+-- ---------------------------------------------------------------------------
+-- Dim while moving: fade the window while the character runs, unless the
+-- mouse is over it or the player is typing in it. Event-driven, no OnUpdate.
+-- ---------------------------------------------------------------------------
+
+local MOVING_ALPHA = 0.35
+local moving = false
+
+local function applyMovingAlpha()
+    if not frame then return end
+    local typing = Hush.Input and Hush.Input.HasFocus and Hush.Input.HasFocus()
+    local fade = moving and Hush.settings.fadeWhenMoving and not typing and not frame:IsMouseOver()
+    frame:SetAlpha(fade and MOVING_ALPHA or 1)
+end
+
+Hush:RegisterEvent("PLAYER_STARTED_MOVING", function() moving = true applyMovingAlpha() end)
+Hush:RegisterEvent("PLAYER_STOPPED_MOVING", function() moving = false applyMovingAlpha() end)
+Hush:RegisterCallback("WINDOW_BUILT", function()
+    frame:HookScript("OnEnter", function() frame:SetAlpha(1) end)
+    frame:HookScript("OnLeave", applyMovingAlpha)
+end, "Main")

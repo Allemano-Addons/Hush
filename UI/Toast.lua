@@ -11,11 +11,25 @@ local frame
 local token = 0
 local DURATION = 12
 
+local moveMode = false
+
+function Toast.RestorePosition()
+    local d = Hush.db.toast
+    frame:ClearAllPoints()
+    if d.left and d.top then
+        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", d.left, d.top)
+    else
+        frame:SetPoint("TOP", UIParent, "TOP", 0, -140)
+    end
+end
+
 local function build()
     frame = CreateFrame("Button", nil, UIParent)
     frame:SetSize(320, 56)
-    frame:SetPoint("TOP", UIParent, "TOP", 0, -140)
     frame:SetFrameStrata("DIALOG")
+    frame:SetMovable(true)
+    frame:RegisterForDrag("LeftButton")
+    Toast.RestorePosition()
     frame:SetClampedToScreen(true)
     frame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     frame:Hide()
@@ -53,12 +67,39 @@ local function build()
     frame:SetScript("OnEnter", function(self) self.bg:SetColorTexture(Theme:Color("selected")) end)
     frame:SetScript("OnLeave", function(self) self.bg:SetColorTexture(Theme:Color("field")) end)
     frame:SetScript("OnClick", function(self, button)
+        if moveMode then return end
         Toast.Hide()
         if button == "LeftButton" and self.onClick then self.onClick() end
     end)
+    frame:SetScript("OnDragStart", function(self) if moveMode then self:StartMoving() end end)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local d = Hush.db.toast
+        d.left = Theme:Snap(self:GetLeft(), self)
+        d.top = Theme:Snap(self:GetTop(), self)
+        Toast.RestorePosition()
+    end)
+end
+
+-- "Unlock & move" in the settings: show a sample notice that can be dragged.
+function Toast.SetMoveMode(on)
+    if not frame then build() end
+    moveMode = on
+    if on then
+        token = token + 1 -- cancel any pending auto-hide
+        frame.title:SetText("Combat notice")
+        frame.sub:SetText("Drag to move  ·  press Lock in the settings when done")
+        frame.onClick = nil
+        frame.fadeOut:Stop()
+        frame:SetAlpha(1)
+        frame:Show()
+    else
+        frame:Hide()
+    end
 end
 
 function Toast.Show(title, sub, onClick)
+    if moveMode then return end
     if not frame then build() end
     frame.title:SetText(title)
     frame.sub:SetText(sub or "")
