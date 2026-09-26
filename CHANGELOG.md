@@ -108,3 +108,9 @@
 ### Wrap-up
 - Dev mode: test and diagnostic commands (`dump`, `fake`, `fakemany`, `fakeconvo`, `fakegroup`, `clearfake`, `read`, `move`, `toasttest`, `api`) are hidden and blocked unless `/hush dev` is on (saved).
 - Scrollbar dragging stops safely even if the mouse button is released outside the game.
+
+## 0.1.1 – 2026-09-27
+- Font choice in Settings → Appearance: separate "Text font" and "Heading font" dropdowns. Lists the game fonts plus fonts other addons share through LibSharedMedia (e.g. EllesmereUI's Expressway, Barlow Condensed, Poppins), but only those that actually load on this client; each name is previewed in its own font. Hush does not bundle LibSharedMedia.
+- "Automatic" (default): game font for text, Barlow Condensed for headings when another addon provides it.
+- New dropdown widget; menus can open below a button and preview fonts. Settings panel is taller (620 px).
+- `/hush debug` shows the fonts in use.

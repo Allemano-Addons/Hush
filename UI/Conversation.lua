@@ -46,13 +46,14 @@ end
 
 local function measureText(msg, width, delta)
     local size = Theme:TextSize(delta)
+    local font = Theme.fonts.regular
     local c = heights[msg]
-    if c and c.w == width and c.size == size then return c.h end
+    if c and c.w == width and c.size == size and c.font == font then return c.h end
     Theme:SetFont(measure, "regular", delta)
     measure:SetWidth(width)
     measure:SetText(msg.m ~= "" and msg.m or " ")
     local h = ceil(measure:GetStringHeight())
-    heights[msg] = { w = width, size = size, h = h }
+    heights[msg] = { w = width, size = size, font = font, h = h }
     return h
 end
 
@@ -453,7 +454,9 @@ Hush:RegisterCallback("WINDOW_SHOWN", function()
 end, "Conversation")
 
 Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
-    if key == "textSize" or key == "timestamps" or key == "portraits" or key == "msgStyle" or key == "accent" or key == "useClassColor" then
+    if key == "textSize" or key == "timestamps" or key == "portraits" or key == "msgStyle" or key == "accent"
+        or key == "useClassColor" or key == "font" or key == "headingFont" then
         Conv.Refresh(atBottom())
     end
 end, "Conversation")
+Hush:RegisterCallback("FONTS_CHANGED", function() Conv.Refresh(atBottom()) end, "Conversation")

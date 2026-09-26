@@ -102,6 +102,8 @@ local DEFAULT_SETTINGS = {
     fadeWhenMoving = true,
     sound = true,
     soundKey = "ping",
+    font = "auto",           -- "auto" or a font name (game font or LibSharedMedia)
+    headingFont = "auto",
     combatToast = true,
 }
 
@@ -216,6 +218,7 @@ local function debugReport()
     local w, h = C.GetPhysicalScreenSize()
     Hush:Print(("screen %dx%d, UI scale %.3f, 1px = %.4f"):format(w, h, UIParent:GetEffectiveScale(), T:Pixel()))
     Hush:Print("fonts:", T.fontStatus)
+    Hush:Print("  in use: text", T.fonts.regular, "| heading", T.fonts.heading)
     if T.fontDiag and T.fontStatus ~= "Barlow ok" then
         for key, diag in pairs(T.fontDiag) do Hush:Print(("  %s: %s"):format(key, diag)) end
     end

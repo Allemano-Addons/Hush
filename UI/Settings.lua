@@ -8,7 +8,7 @@ local S = Theme.size
 local Settings = {}
 Hush.Settings = Settings
 
-local WIDTH, HEIGHT, MENU_W = 760, 540, 190
+local WIDTH, HEIGHT, MENU_W = 760, 620, 190
 local PAD = 28
 
 local frame
@@ -97,6 +97,14 @@ function Page:Segment(label, desc, options, getter, setter)
     self:Row(label, desc, s)
     self.refreshers[#self.refreshers + 1] = function() s:Set(getter()) end
     return s
+end
+
+-- getOptions() -> { { value, label, font = path (optional preview) }, ... }
+function Page:Dropdown(label, desc, getOptions, getter, setter)
+    local d = W.Dropdown(self.frame, 220, getOptions, setter)
+    self:Row(label, desc, d)
+    self.refreshers[#self.refreshers + 1] = function() d:Set(getter()) end
+    return d
 end
 
 function Page:Slider(label, desc, minV, maxV, step, fmt, getter, setter)
@@ -190,6 +198,20 @@ local function buildAppearance(p)
         function(v) return v .. "%" end,
         function() return floor((Hush.settings.bgAlpha or 0.95) * 100 + 0.5) end,
         function(v) Settings.Set("bgAlpha", v / 100) end)
+    -- Only fonts that load on this client are listed; each is shown in its own font.
+    local function fontOptions(autoLabel)
+        local opts = { { value = "auto", label = autoLabel } }
+        for _, f in ipairs(Theme:AvailableFonts()) do
+            opts[#opts + 1] = { value = f.name, label = f.name, font = f.path }
+        end
+        return opts
+    end
+    p:Header("Fonts")
+    p:Dropdown("Text font", "Game fonts and fonts shared by other addons (LibSharedMedia).",
+        function() return fontOptions("Automatic (game font)") end, get("font"), set("font"))
+    p:Dropdown("Heading font", "Titles, categories and dividers.",
+        function() return fontOptions("Automatic (Barlow Condensed if available)") end, get("headingFont"), set("headingFont"))
+    p:Header("Layout")
     p:Segment("Text size", nil,
         { { value = "S", label = "S" }, { value = "M", label = "M" }, { value = "L", label = "L" } },
         get("textSize"), set("textSize"))

@@ -76,13 +76,27 @@ end
 local FONT_DIR = "Interface\\AddOns\\" .. addonName .. "\\Media\\Fonts\\"
 local FALLBACK = "Fonts\\FRIZQT__.TTF"
 
-Theme.fonts = {
+-- Hush's own Barlow files (WoW Forever currently refuses them; kept for when it doesn't).
+local BUNDLED = {
     regular  = FONT_DIR .. "Barlow-Regular.ttf",
     medium   = FONT_DIR .. "Barlow-Medium.ttf",
     semibold = FONT_DIR .. "Barlow-SemiBold.ttf",
     heading  = FONT_DIR .. "BarlowCondensed-SemiBold.ttf",
 }
+
+-- Fonts in use per kind, resolved by Theme:ApplyFontChoice().
+Theme.fonts = {
+    regular = FALLBACK, medium = FALLBACK, semibold = FALLBACK, heading = FALLBACK,
+}
 Theme.fontStatus = "not checked"
+
+-- Fonts that ship with the game client.
+local BUILTIN_FONTS = {
+    { name = "Friz Quadrata", path = "Fonts\\FRIZQT__.TTF" },
+    { name = "Arial Narrow",  path = "Fonts\\ARIALN.TTF" },
+    { name = "Skurri",        path = "Fonts\\skurri.ttf" },
+    { name = "Morpheus",      path = "Fonts\\MORPHEUS.ttf" },
+}
 
 local function normalizePath(p)
     return p and strlower((p:gsub("/", "\\"))) or ""
@@ -102,19 +116,86 @@ local function fontLoads(path)
     return normalizePath(current) == normalizePath(path), diag
 end
 
+-- Whether a font file loads on this client (cached per path).
+local validCache = {}
+local function valid(path)
+    if not path then return false end
+    if validCache[path] == nil then validCache[path] = fontLoads(path) and true or false end
+    return validCache[path]
+end
+
+-- LibSharedMedia, if another addon provides it (Hush does not bundle it).
+local function lsm()
+    return LibStub and LibStub("LibSharedMedia-3.0", true)
+end
+
+-- Every font that loads here: game fonts, then fonts other addons registered in
+-- LibSharedMedia, sorted by name. Returns { { name, path }, ... }.
+function Theme:AvailableFonts()
+    local list, seen = {}, {}
+    local function add(name, path)
+        local key = normalizePath(path)
+        if not seen[key] and valid(path) then
+            seen[key] = true
+            list[#list + 1] = { name = name, path = path }
+        end
+    end
+    for _, f in ipairs(BUILTIN_FONTS) do add(f.name, f.path) end
+    local L = lsm()
+    if L then
+        local shared = {}
+        for name, path in pairs(L:HashTable("font") or {}) do shared[#shared + 1] = { name = name, path = path } end
+        sort(shared, function(a, b) return a.name < b.name end)
+        for _, f in ipairs(shared) do add(f.name, f.path) end
+    end
+    return list
+end
+
+-- Path for a font name from the list above, or nil.
+function Theme:FontPath(name)
+    for _, f in ipairs(BUILTIN_FONTS) do
+        if f.name == name then return f.path end
+    end
+    local L = lsm()
+    return L and L:IsValid("font", name) and L:Fetch("font", name) or nil
+end
+
+-- Resolve settings.font / settings.headingFont ("auto" or a font name) into Theme.fonts.
+-- Automatic: Hush's Barlow if the client accepts it, otherwise the game font for text and
+-- "Barlow Condensed" from LibSharedMedia (if registered by another addon) for headings.
+function Theme:ApplyFontChoice()
+    local s = Hush.settings or {}
+    local text = s.font and s.font ~= "auto" and self:FontPath(s.font)
+    if text and not valid(text) then text = nil end
+    local head = s.headingFont and s.headingFont ~= "auto" and self:FontPath(s.headingFont)
+    if head and not valid(head) then head = nil end
+
+    for _, kind in ipairs({ "regular", "medium", "semibold" }) do
+        self.fonts[kind] = text or (valid(BUNDLED[kind]) and BUNDLED[kind]) or FALLBACK
+    end
+    local sharedCondensed = self:FontPath("Barlow Condensed")
+    self.fonts.heading = head
+        or (valid(BUNDLED.heading) and BUNDLED.heading)
+        or (sharedCondensed and valid(sharedCondensed) and sharedCondensed)
+        or FALLBACK
+end
+
 function Theme:CheckFonts()
     local missing = {}
     self.fontDiag = {}
-    for key, path in pairs(self.fonts) do
+    for key, path in pairs(BUNDLED) do
         local loaded, diag = fontLoads(path)
         self.fontDiag[key] = diag
-        if not loaded then
-            self.fonts[key] = FALLBACK
-            missing[#missing + 1] = key
-        end
+        if not loaded then missing[#missing + 1] = key end
     end
-    self.fontStatus = #missing == 0 and "Barlow ok" or ("fallback for " .. table.concat(missing, ", "))
+    self.fontStatus = #missing == 0 and "Barlow ok" or ("bundled Barlow refused for " .. table.concat(missing, ", "))
+    self:ApplyFontChoice()
 end
+
+-- Font changes: resolve before widgets refresh (Theme registers first).
+Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
+    if key == "font" or key == "headingFont" then Theme:ApplyFontChoice() end
+end, "Theme")
 
 -- Apply a font to a FontString. kind: regular/medium/semibold/heading.
 function Theme:SetFont(fs, kind, delta)

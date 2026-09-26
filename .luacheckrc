@@ -36,7 +36,7 @@ read_globals = {
     "Ambiguate", "BNGetFriendInfoByID", "RAID_CLASS_COLORS", "CUSTOM_CLASS_COLORS",
     "LOCALIZED_CLASS_NAMES_MALE", "LOCALIZED_CLASS_NAMES_FEMALE",
     "IsInGuild", "GetGuildInfo", "GetNumGuildMembers", "GetGuildRosterInfo", "GuildRoster",
-    "ERR_CHAT_PLAYER_NOT_FOUND_S", "ERR_FRIEND_ONLINE_SS", "ERR_FRIEND_OFFLINE_S",
+    "LibStub", "ERR_CHAT_PLAYER_NOT_FOUND_S", "ERR_FRIEND_ONLINE_SS", "ERR_FRIEND_OFFLINE_S",
     "SendChatMessage", "BNSendWhisper", "BNGetNumFriends", "BNGetFriendInfo",
     "ChatFrameUtil", "ChatEdit_SetLastTellTarget", "hooksecurefunc", "IsShiftKeyDown",
     "MouseIsOver", "MouseIsOver", "IsMouseButtonDown", "InviteUnit", "GuildInvite", "CanGuildInvite", "C_PartyInfo",

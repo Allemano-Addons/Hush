@@ -119,9 +119,18 @@ end
 Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
     if key == "accent" or key == "useClassColor" then
         W.ApplyAccent()
-    elseif key == "textSize" then
+    elseif key == "textSize" or key == "font" or key == "headingFont" then
         W.RefreshFonts()
     end
+end, "Widgets")
+
+-- Other addons may register LibSharedMedia fonts late during login: resolve again shortly after.
+Hush:RegisterCallback("READY", function()
+    Compat.After(1, function()
+        Theme:ApplyFontChoice()
+        W.RefreshFonts()
+        Hush:Fire("FONTS_CHANGED")
+    end)
 end, "Widgets")
 
 -- ---------------------------------------------------------------------------
@@ -594,7 +603,7 @@ end
 showMenu = function(level, items, anchor)
     hideMenu(level)
     local m = getMenu(level)
-    local width, y = 160, 4
+    local width, y = (level == 1 and anchor and anchor:GetWidth()) or 160, 4
     for i, item in ipairs(items) do
         local b = menuButton(m, i)
         b.item = item
@@ -608,6 +617,12 @@ showMenu = function(level, items, anchor)
         b.check:SetShown(item.checked == true)
         b.arrow:SetShown(item.submenu ~= nil)
         if not sep then
+            -- Optional font preview (font picker); otherwise the normal menu font.
+            if item.font then
+                b.text:SetFont(item.font, Theme:TextSize(1), "")
+            else
+                Theme:SetFont(b.text, "regular", 0)
+            end
             b.text:SetText(item.text)
             local color = item.disabled and "textFaint" or item.danger and "danger" or "text"
             b.text:SetTextColor(Theme:Color(color))
@@ -619,7 +634,9 @@ showMenu = function(level, items, anchor)
     for i = #items + 1, #m.buttons do m.buttons[i]:Hide() end
     m:SetSize(width, y + 4)
     m:ClearAllPoints()
-    if anchor then
+    if anchor and level == 1 then
+        m:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2) -- dropdown below its button
+    elseif anchor then
         m:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 2, 4)
     else
         local x, cy = GetCursorPosition()
@@ -629,9 +646,10 @@ showMenu = function(level, items, anchor)
     m:Show()
 end
 
-function W.OpenMenu(items)
+-- anchor (optional): open below that frame, like a dropdown. Otherwise at the cursor.
+function W.OpenMenu(items, anchor)
     W.HideTooltip()
-    showMenu(1, items, nil)
+    showMenu(1, items, anchor)
 end
 
 -- Close menus when clicking anywhere else.
@@ -857,6 +875,52 @@ function W.Slider(parent, minV, maxV, step, width, format, onChange)
         self.silent = false
     end
     return s
+end
+
+-- Dropdown: a field-styled button that opens a menu below itself.
+-- getOptions() -> { { value, label, font = path (optional preview) }, ... }
+function W.Dropdown(parent, width, getOptions, onChange)
+    local d = CreateFrame("Button", nil, parent)
+    d:SetSize(width or 200, 26)
+    d.bg = W.Fill(d, "field", 1)
+    d.bg:SetAllPoints()
+    d.border = W.Border(d, "line")
+    d.text = W.Text(d, "regular", 0, "text")
+    d.text:SetPoint("LEFT", 10, 0)
+    d.text:SetWidth((width or 200) - 36)
+    d.arrow = W.Icon(d, "chevronDown", 8, "v")
+    d.arrow.box:ClearAllPoints()
+    d.arrow.box:SetPoint("RIGHT", -10, 0)
+    d.arrow:SetColor(Theme:Color("textDim"))
+
+    function d:Set(value)
+        self.value = value
+        local label = tostring(value)
+        for _, opt in ipairs(getOptions()) do
+            if opt.value == value then label = opt.label break end
+        end
+        self.text:SetText(label)
+    end
+
+    d:SetScript("OnEnter", function(self) self.border:SetColor(Theme:Color("textFaint")) end)
+    d:SetScript("OnLeave", function(self) self.border:SetColor(Theme:Color("line")) end)
+    d:SetScript("OnClick", function(self)
+        if W.IsMenuOpen() then W.CloseMenus() return end
+        local items = {}
+        for _, opt in ipairs(getOptions()) do
+            items[#items + 1] = {
+                text = opt.label,
+                font = opt.font,
+                checked = opt.value == self.value,
+                onClick = function()
+                    self:Set(opt.value)
+                    if onChange then onChange(opt.value) end
+                end,
+            }
+        end
+        W.OpenMenu(items, self)
+    end)
+    return d
 end
 
 -- Square color swatch with a selection ring.
