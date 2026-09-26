@@ -52,3 +52,9 @@
 - "New message" (+): type a character name in the header to open or start a conversation (reuses an existing one regardless of letter case).
 - Default-chat filter is now active: whispers are hidden there outside combat and `/r` still works. `/hush filter` toggles it (saved).
 - Auto-open: an incoming whisper opens Hush on that conversation when the window is closed (on by default, schema 2 turns it on for existing installs). Never in combat, never for Requests, never steals keyboard focus, never switches away from an open conversation. Sent whispers can do the same (`autoOpenOut`, off by default).
+
+### Step 7 – Combat and sound
+- Entering combat hides the Hush window (setting `hideInCombat`); it reopens after combat if it was open.
+- Whispers during combat stay unread in their conversations. After combat a toast shows "N whispers during combat" with the senders; left-click opens Hush on the latest one, right-click dismisses. `UI/Toast.lua` fades with animations and hides on a timer (no OnUpdate).
+- Own whisper sound (never in combat, max one per 1.5 s): Ping (default), Whisper, Click, Bell. `/hush sound <name>` chooses and plays it.
+- Test command: `/hush toasttest`.

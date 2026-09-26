@@ -101,6 +101,7 @@ local DEFAULT_SETTINGS = {
     autoOpenOut = false,
     fadeWhenMoving = true,
     sound = true,
+    soundKey = "ping",
     combatToast = true,
 }
 
