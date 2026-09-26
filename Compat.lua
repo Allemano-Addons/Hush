@@ -261,6 +261,22 @@ local function formatToPattern(fmt)
     return "^" .. p .. "$"
 end
 
+local onlinePattern, offlinePattern
+-- "X has come online." / "X has gone offline." (guild members and friends).
+-- Returns name, isOnline or nil.
+function Compat.MatchOnlineStatus(msg)
+    if ERR_FRIEND_ONLINE_SS then
+        onlinePattern = onlinePattern or formatToPattern(ERR_FRIEND_ONLINE_SS)
+        local name = msg:match(onlinePattern)
+        if name then return name, true end
+    end
+    if ERR_FRIEND_OFFLINE_S then
+        offlinePattern = offlinePattern or formatToPattern(ERR_FRIEND_OFFLINE_S)
+        local name = msg:match(offlinePattern)
+        if name then return name, false end
+    end
+end
+
 local notFoundPattern
 -- Returns the player name if msg is "player not found", else nil.
 function Compat.MatchPlayerNotFound(msg)

@@ -56,7 +56,9 @@ function Menus.ChatItems(key)
     if conv.kind == "whisper" then
         items[#items + 1] = { separator = true }
         items[#items + 1] = {
-            text = "Invite to group",
+            -- Known offline (guild/friend): the server would answer with a confusing error.
+            text = conv.info.online == false and "Invite to group (offline)" or "Invite to group",
+            disabled = conv.info.online == false,
             onClick = function() Compat.InviteToGroup(conv.target) end,
         }
         items[#items + 1] = {

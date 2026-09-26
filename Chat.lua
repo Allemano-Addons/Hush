@@ -146,11 +146,18 @@ local function onAutoReply(event, text, sender)
 end
 
 local function onSystem(_, text)
-    local who = Compat.MatchPlayerNotFound(text or "")
+    text = text or ""
+    local who = Compat.MatchPlayerNotFound(text)
     if who then
         local name = Compat.NormalizeName(who)
         if name then addSystemLine(name, "notfound", "Player not found (offline or wrong name).") end
+        return
     end
+    -- Keep online dots current for guild members and friends.
+    local who2, online = Compat.MatchOnlineStatus(text)
+    local name = who2 and Compat.NormalizeName(who2)
+    local conv = name and Data.Get(Data.WhisperKey(name))
+    if conv then Data.UpdateInfo(conv, { online = online }) end
 end
 
 -- ---------------------------------------------------------------------------

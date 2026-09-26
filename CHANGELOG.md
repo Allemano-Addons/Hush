@@ -78,3 +78,5 @@
 - `UI/Launcher.lua`: small movable launcher (own, no LibDBIcon) with an accent speech-bubble icon and an unread badge (whispers + requests). Left-click toggles Hush, drag moves it (position saved on whole pixels), right-click menu: open/close, reply to last whisper, settings, lock position, hide. `/hush launcher` shows it again, `/hush launcher reset` moves it back.
 - `Bindings.xml`: "Open / close Hush" and "Reply to last whisper" (opens Hush on the latest incoming whisper with focus in the input) under Key Bindings → AddOns → Hush.
 - Public API: `Hush.Toggle()`, `Hush.Open(key, focus)`, `Hush.ReplyLast()`.
+- Online status of guild members and friends updates immediately from "has come online" / "has gone offline" messages.
+- "Invite to group" is disabled with "(offline)" when the player is known to be offline (WoW Forever answers such invites with a misleading "Cannot find player" naming another character with the same first name).
