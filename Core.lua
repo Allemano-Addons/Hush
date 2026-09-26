@@ -230,28 +230,50 @@ end
 -- Subcommands: other files add their own with Hush:AddSlashCommand.
 local slashCommands, slashOrder = {}, {}
 
+-- Test and diagnostic commands: hidden and blocked unless dev mode is on (/hush dev).
+local DEV_COMMANDS = {
+    api = true, dump = true, fake = true, read = true, move = true, fakemany = true,
+    clearfake = true, fakeconvo = true, fakegroup = true, toasttest = true,
+}
+
+local function devMode() return Hush.db ~= nil and Hush.db.dev == true end
+
 function Hush:AddSlashCommand(name, fn, help)
     if not slashCommands[name] then slashOrder[#slashOrder + 1] = name end
-    slashCommands[name] = { fn = fn, help = help }
+    slashCommands[name] = { fn = fn, help = help, dev = DEV_COMMANDS[name] == true }
 end
 
 Hush:AddSlashCommand("debug", debugReport, "client and addon diagnostics")
 Hush:AddSlashCommand("version", function() Hush:Print("v" .. tostring(Hush.version)) end, "show version")
+Hush:AddSlashCommand("dev", function()
+    Hush.db.dev = not devMode()
+    Hush:Print("Dev mode", devMode() and "ON: test commands are available (/hush help)." or "OFF.")
+end, "toggle dev mode (test commands)")
+
+local function printHelp()
+    Hush:Print("/hush - open/close")
+    for _, name in ipairs(slashOrder) do
+        local c = slashCommands[name]
+        if not c.dev or devMode() then
+            Hush:Print(("/hush %s - %s%s"):format(name, c.help or "", c.dev and "  |cff7c858f(dev)|r" or ""))
+        end
+    end
+end
 
 SLASH_HUSH1 = "/hush"
 SlashCmdList.HUSH = function(msg)
     msg = strtrim(msg or "")
     local cmd, rest = msg:match("^(%S*)%s*(.-)$")
     cmd = strlower(cmd or "")
+    local c = slashCommands[cmd]
     if cmd == "" then
         Hush:Toggle()
-    elseif slashCommands[cmd] then
-        slashCommands[cmd].fn(rest)
+    elseif c and c.dev and not devMode() then
+        Hush:Print("/hush " .. cmd .. " is a dev command. Turn on dev mode with /hush dev")
+    elseif c then
+        c.fn(rest)
     else
-        Hush:Print("/hush - open/close")
-        for _, name in ipairs(slashOrder) do
-            Hush:Print(("/hush %s - %s"):format(name, slashCommands[name].help or ""))
-        end
+        printHelp()
     end
 end
 

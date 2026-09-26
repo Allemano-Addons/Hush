@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (in progress)
+## 0.1.0 – 2026-09-27
 
 ### Step 1 – Skeleton
 - Addon skeleton: `Hush.toc` (Interface 16001), namespace, event dispatcher, callback system.
@@ -104,3 +104,7 @@
   - events: `RegisterCallback` / `UnregisterCallback` for READY, CONV_*, MESSAGE_ADDED, UNREAD_CHANGED, CATEGORIES_CHANGED, SETTINGS_CHANGED, WINDOW_*, TAB_CHANGED, SEARCH_CHANGED
   - `Hush.Theme` and `Hush.Widgets` so modules match the Hush style
 - Header renders module status chips and buttons.
+
+### Wrap-up
+- Dev mode: test and diagnostic commands (`dump`, `fake`, `fakemany`, `fakeconvo`, `fakegroup`, `clearfake`, `read`, `move`, `toasttest`, `api`) are hidden and blocked unless `/hush dev` is on (saved).
+- Scrollbar dragging stops safely even if the mouse button is released outside the game.

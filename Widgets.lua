@@ -428,6 +428,12 @@ function W.Scrollbar(parent, onScroll)
         self.startOffset = bar.offset
         self.tex:SetColorTexture(Theme:Color("textFaint"))
         self:SetScript("OnUpdate", function(s)
+            -- Safety: stop if the button was released outside the game frame.
+            if not IsMouseButtonDown("LeftButton") then
+                s:SetScript("OnUpdate", nil)
+                s.tex:SetColorTexture(Theme:Color("line"))
+                return
+            end
             local _, y = GetCursorPosition()
             y = y / s:GetEffectiveScale()
             local trackH = bar:GetHeight() - s:GetHeight()
