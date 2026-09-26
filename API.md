@@ -18,3 +18,9 @@ The API grows during 0.1.x. This file is completed in the final step.
 | Event | Arguments |
 |---|---|
 | `READY` | – (saved data loaded, UI can be built) |
+| `CONV_CREATED` | `key, conv` |
+| `CONV_UPDATED` | `conv` (player info, pin) |
+| `CONV_MOVED` | `key, from, to` (`from` may be `"requests"`) |
+| `CONV_DELETED` | `key` |
+| `MESSAGE_ADDED` | `key, msg, conv` – `msg = { n, t, d = "in"/"out"/"sys", m, s, k }` |
+| `UNREAD_CHANGED` | – |

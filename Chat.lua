@@ -1,0 +1,274 @@
+-- Chat: captures whisper events into Hush and hides them in the default chat (never in combat).
+local _, Hush = ...
+
+local Chat = {}
+Hush.Chat = Chat
+
+local Compat, Data = Hush.Compat, Hush.Data
+
+Chat.inCombat = false
+
+-- ---------------------------------------------------------------------------
+-- Guild roster cache
+-- ---------------------------------------------------------------------------
+
+local roster = {}
+local rosterPending = false
+local lastRosterRequest = 0
+
+function Chat.IsGuildMember(name)
+    return name ~= nil and roster[name] ~= nil
+end
+
+local function requestRoster(force)
+    local now = GetTime()
+    if not force and now - lastRosterRequest < 30 then return end
+    lastRosterRequest = now
+    Compat.RequestGuildRoster()
+end
+
+local function readRoster()
+    rosterPending = false
+    roster = Compat.ReadGuildRoster()
+    local now = time()
+    for key, conv in pairs(Data.All()) do
+        if conv.kind == "whisper" then
+            local info = roster[conv.target]
+            if info then
+                Data.UpdateInfo(conv, info)
+                -- A fresh conversation that was created before the roster knew the player.
+                if conv.category == "other" and now - conv.created < 300 then
+                    Data.Move(key, "guild")
+                end
+            end
+        end
+    end
+end
+
+Hush:RegisterEvent("GUILD_ROSTER_UPDATE", function()
+    -- Coalesce bursts of roster events into one read.
+    if rosterPending or not Hush.char then return end
+    rosterPending = true
+    Compat.After(1, readRoster)
+end)
+
+-- Everything Hush knows about a character right now.
+function Chat.LookupInfo(name)
+    local info = {}
+    local g = roster[name]
+    if g then for k, v in pairs(g) do info[k] = v end end
+    local f = Compat.FriendInfo(name)
+    if f then for k, v in pairs(f) do if info[k] == nil then info[k] = v end end end
+    return info
+end
+
+-- Known players skip the Requests tab.
+local function isKnown(name)
+    return roster[name] ~= nil or Compat.FriendInfo(name) ~= nil
+end
+
+-- ---------------------------------------------------------------------------
+-- Capture
+-- ---------------------------------------------------------------------------
+
+local function onWhisper(event, text, sender, _, _, _, flags, _, _, _, _, _, guid)
+    local name = Compat.NormalizeName(sender)
+    if not name then return end
+    local incoming = event == "CHAT_MSG_WHISPER"
+    local key = Data.WhisperKey(name)
+
+    local info = Chat.LookupInfo(name)
+    info.class = info.class or Compat.ClassFromGUID(guid)
+
+    local conv, created = Data.Ensure(key, {
+        kind = "whisper", target = name, display = name, info = info,
+        request = incoming and not isKnown(name) and flags ~= "GM",
+    })
+    if not created then Data.UpdateInfo(conv, info) end
+
+    Data.AddMessage(key, {
+        d = incoming and "in" or "out",
+        m = text,
+        s = incoming and name or nil,
+        k = flags == "GM" and "gm" or nil,
+    })
+    if incoming then
+        Hush.char.lastWhisper = key
+        if not roster[name] then requestRoster() end
+    end
+end
+
+local function onBNWhisper(event, text, _, _, _, _, _, _, _, _, _, _, _, bnID)
+    local bn = Compat.BNInfo(bnID) or {}
+    local tag = bn.tag or ("id" .. tostring(bnID))
+    local key = Data.BNetKey(tag)
+    local incoming = event == "CHAT_MSG_BN_WHISPER"
+
+    local info = { class = bn.class, level = bn.level, zone = bn.zone, online = bn.online,
+                   status = bn.status, character = bn.character }
+    local conv, created = Data.Ensure(key, {
+        kind = "bnet", target = tag, display = tag:match("^[^#]+") or tag, info = info,
+    })
+    if not created then Data.UpdateInfo(conv, info) end
+    conv.bnID = bnID -- session-local, refreshed on every message
+
+    Data.AddMessage(key, { d = incoming and "in" or "out", m = text, s = incoming and conv.display or nil })
+    if incoming then Hush.char.lastWhisper = key end
+end
+
+-- AFK/DND auto-replies and "player not found" become discreet system lines.
+local function addSystemLine(name, kind, text)
+    local key = Data.WhisperKey(name)
+    local conv = Data.Get(key)
+    if not conv then return false end
+    -- Auto-replies repeat on every whisper; skip an identical one within 5 minutes.
+    local last = conv.msgs[#conv.msgs]
+    if last and last.d == "sys" and last.k == kind and last.m == text and time() - last.t < 300 then
+        return true
+    end
+    Data.AddMessage(key, { d = "sys", k = kind, m = text })
+    return true
+end
+
+local function onAutoReply(event, text, sender)
+    local name = Compat.NormalizeName(sender)
+    if not name then return end
+    local kind = event == "CHAT_MSG_AFK" and "afk" or "dnd"
+    local label = kind == "afk" and "is AFK" or "is busy (DND)"
+    addSystemLine(name, kind, (text and text ~= "") and (label .. ": " .. text) or label)
+end
+
+local function onSystem(_, text)
+    local who = Compat.MatchPlayerNotFound(text or "")
+    if who then
+        local name = Compat.NormalizeName(who)
+        if name then addSystemLine(name, "notfound", "Player not found (offline or wrong name).") end
+    end
+end
+
+-- ---------------------------------------------------------------------------
+-- Default chat filter
+-- ---------------------------------------------------------------------------
+
+-- Hide only when enabled, when Hush can show messages, and never in combat.
+local function shouldHide()
+    local s = Hush.settings
+    return s ~= nil and s.hideWhispers and Hush.canDisplay == true and not Compat.InCombat()
+end
+Chat.ShouldHide = shouldHide
+
+local function whisperFilter(_, _, _, _, _, _, _, flags)
+    if flags == "GM" then return false end
+    return shouldHide()
+end
+
+local function autoReplyFilter(_, _, _, sender)
+    local name = Compat.NormalizeName(sender)
+    return name ~= nil and Data.Get(Data.WhisperKey(name)) ~= nil and shouldHide()
+end
+
+local function systemFilter(_, _, text)
+    local who = Compat.MatchPlayerNotFound(text or "")
+    if not who then return false end
+    local name = Compat.NormalizeName(who)
+    return name ~= nil and Data.Get(Data.WhisperKey(name)) ~= nil and shouldHide()
+end
+
+-- ---------------------------------------------------------------------------
+-- Setup
+-- ---------------------------------------------------------------------------
+
+Hush:RegisterEvent("PLAYER_LOGIN", function()
+    Chat.inCombat = Compat.InCombat()
+
+    Hush:RegisterEvent("CHAT_MSG_WHISPER", onWhisper)
+    Hush:RegisterEvent("CHAT_MSG_WHISPER_INFORM", onWhisper)
+    Hush:RegisterEvent("CHAT_MSG_BN_WHISPER", onBNWhisper)
+    Hush:RegisterEvent("CHAT_MSG_BN_WHISPER_INFORM", onBNWhisper)
+    Hush:RegisterEvent("CHAT_MSG_AFK", onAutoReply)
+    Hush:RegisterEvent("CHAT_MSG_DND", onAutoReply)
+    Hush:RegisterEvent("CHAT_MSG_SYSTEM", onSystem)
+
+    if Compat.features.ChatFilter then
+        for _, e in ipairs({ "CHAT_MSG_WHISPER", "CHAT_MSG_WHISPER_INFORM", "CHAT_MSG_BN_WHISPER", "CHAT_MSG_BN_WHISPER_INFORM" }) do
+            ChatFrame_AddMessageEventFilter(e, whisperFilter)
+        end
+        ChatFrame_AddMessageEventFilter("CHAT_MSG_AFK", autoReplyFilter)
+        ChatFrame_AddMessageEventFilter("CHAT_MSG_DND", autoReplyFilter)
+        ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", systemFilter)
+    end
+
+    Compat.After(3, function() requestRoster(true) end)
+end)
+
+Hush:RegisterEvent("PLAYER_REGEN_DISABLED", function() Chat.inCombat = true end)
+Hush:RegisterEvent("PLAYER_REGEN_ENABLED", function() Chat.inCombat = false end)
+
+-- ---------------------------------------------------------------------------
+-- Test commands (until the window exists)
+-- ---------------------------------------------------------------------------
+
+local function findConv(query)
+    query = strlower(query)
+    for key, conv in pairs(Data.All()) do
+        if strlower(conv.display) == query or strlower(key) == query then return key, conv end
+    end
+    for key, conv in pairs(Data.All()) do
+        if strlower(conv.display):find(query, 1, true) then return key, conv end
+    end
+end
+
+local function fmtTime(t) return date("%H:%M", t) end
+
+Hush:AddSlashCommand("dump", function(arg)
+    if arg ~= "" then
+        local key, conv = findConv(arg)
+        if not conv then Hush:Print("No conversation matching", arg) return end
+        Hush:Print(("%s  [%s/%s] class=%s lvl=%s zone=%s guild=%s online=%s"):format(key, Data.TabOf(conv),
+            conv.category, tostring(conv.info.class), tostring(conv.info.level), tostring(conv.info.zone),
+            tostring(conv.info.guild), tostring(conv.info.online)))
+        for i = max(1, #conv.msgs - 9), #conv.msgs do
+            local m = conv.msgs[i]
+            local who = m.d == "out" and "You" or m.d == "sys" and "*" .. (m.k or "sys") or (m.s or "?")
+            local newMark = conv.firstUnread and m.n == conv.firstUnread and " |cff3fc7eb--- New ---|r" or ""
+            Hush:Print(("  #%d %s %s: %s%s"):format(m.n, fmtTime(m.t), who, m.m, newMark))
+        end
+        return
+    end
+
+    local list = {}
+    for key, conv in pairs(Data.All()) do list[#list + 1] = { key = key, conv = conv } end
+    sort(list, function(a, b) return a.conv.last > b.conv.last end)
+    local total, byTab = Data.UnreadTotals()
+    Hush:Print(("%d conversations, unread %d (whispers %d, requests %d, groups %d)"):format(
+        #list, total, byTab.whispers, byTab.requests, byTab.groups))
+    for _, e in ipairs(list) do
+        local c = e.conv
+        Hush:Print(("  %s [%s/%s%s] unread %d, %d msgs, %s: %s"):format(e.key, Data.TabOf(c), c.category,
+            c.pinned and ", pinned" or "", c.unread, #c.msgs, fmtTime(c.last), c.preview))
+    end
+end, "list conversations, or /hush dump <name> for messages")
+
+Hush:AddSlashCommand("fake", function(arg)
+    local name, text = arg:match("^(%S+)%s*(.*)$")
+    name = name or "Testplayer"
+    if not text or text == "" then text = "Hello from " .. name .. "! |cff1eff00|Hitem:2589::::::::1:::::::|h[Linen Cloth]|h|r" end
+    onWhisper("CHAT_MSG_WHISPER", text, name, "", "", "", "", 0, 0, "", 0, 0, "")
+    Hush:Print("Fake whisper from", name)
+end, "simulate an incoming whisper: /hush fake <name> <text>")
+
+Hush:AddSlashCommand("read", function(arg)
+    local key = findConv(arg)
+    if key then Data.MarkRead(key) Hush:Print("Marked read:", key) end
+end, "mark a conversation read: /hush read <name>")
+
+Hush:AddSlashCommand("move", function(arg)
+    local name, cat = arg:match("^(%S+)%s+(%S+)$")
+    local key = name and findConv(name)
+    if key and Data.Move(key, strlower(cat)) then Hush:Print("Moved", key, "to", cat) else Hush:Print("Usage: /hush move <name> <guild|recruits|other>") end
+end, "move a conversation: /hush move <name> <category>")
+
+Hush:AddSlashCommand("filtertest", function()
+    Hush.canDisplay = not Hush.canDisplay
+    Hush:Print("Default-chat whisper hiding is now", Hush.canDisplay and "ACTIVE (until /reload)" or "inactive")
+end, "toggle whisper hiding in the default chat for testing")

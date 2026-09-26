@@ -7,4 +7,6 @@
 Core.lua
 Compat.lua
 Theme.lua
+Data.lua
+Chat.lua
 API.lua

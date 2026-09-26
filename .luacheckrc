@@ -34,4 +34,7 @@ read_globals = {
     "UnitName", "UnitClass", "UnitAffectingCombat", "InCombatLockdown",
     "GetRealmName", "GetNormalizedRealmName", "GetPlayerInfoByGUID",
     "Ambiguate", "BNGetFriendInfoByID", "RAID_CLASS_COLORS", "CUSTOM_CLASS_COLORS",
+    "LOCALIZED_CLASS_NAMES_MALE", "LOCALIZED_CLASS_NAMES_FEMALE",
+    "IsInGuild", "GetGuildInfo", "GetNumGuildMembers", "GetGuildRosterInfo", "GuildRoster",
+    "ERR_CHAT_PLAYER_NOT_FOUND_S",
 }
