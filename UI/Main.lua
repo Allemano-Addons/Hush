@@ -391,6 +391,14 @@ function Main.UpdateHeader(key)
     if info.guild then parts[#parts + 1] = "<" .. info.guild .. ">" end
     if info.zone then parts[#parts + 1] = info.zone end
     if conv.kind == "whisper" and #parts == 0 then parts[#parts + 1] = "No info yet" end
+    if conv.kind == "group" then
+        if Hush.Groups.IsActive(conv) then
+            parts[#parts + 1] = "Active"
+            parts[#parts + 1] = Hush.Groups.MemberCount() .. " members"
+        else
+            parts[#parts + 1] = "Ended" .. (conv.ended and (" " .. date("%d/%m %H:%M", conv.ended)) or "")
+        end
+    end
     header.meta:SetText(table.concat(parts, "  ·  "))
 end
 

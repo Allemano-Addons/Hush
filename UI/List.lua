@@ -48,6 +48,7 @@ function List.NameColor(conv)
     local r, g, b = Compat.ClassColor(conv.info and conv.info.class)
     if r then return r, g, b end
     if conv.kind == "bnet" then return Theme:Color("bnet") end
+    if conv.kind == "group" then return Theme:Color(conv.channel == "RAID" and "raid" or "party") end
     return Theme:Color("text")
 end
 

@@ -10,6 +10,7 @@ Theme.lua
 Widgets.lua
 Data.lua
 Chat.lua
+Groups.lua
 UI\Main.lua
 UI\List.lua
 UI\Conversation.lua

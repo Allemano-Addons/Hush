@@ -58,3 +58,10 @@
 - Whispers during combat stay unread in their conversations. After combat a toast shows "N whispers during combat" with the senders; left-click opens Hush on the latest one, right-click dismisses. `UI/Toast.lua` fades with animations and hides on a timer (no OnUpdate).
 - Own whisper sound (never in combat, max one per 1.5 s): Ping (default), Whisper, Click, Bell. `/hush sound <name>` chooses and plays it.
 - Test command: `/hush toasttest`.
+
+### Step 8 – Groups
+- `Groups.lua`: party and raid chat (`PARTY`, `PARTY_LEADER`, `RAID`, `RAID_LEADER`, `RAID_WARNING`) captured into the Groups tab. Never hidden in the default chat, no sound, no auto-open.
+- One conversation per group/raid session, named with its start time ("Party · 26/09 20:14"). Created on the first message; a party converted to a raid starts a new one. The session survives `/reload`.
+- Sender names in class color, "Leader" / "Raid warning" tags, raid warnings in orange. Party/raid colors in the list.
+- Header shows "Active · N members" or "Ended <time>". Sending to an ended group is blocked with a notice.
+- Test command: `/hush fakegroup`.

@@ -23,6 +23,9 @@ Theme.colors = {
     offline   = { hex("5A626B") },
     danger    = { hex("E0564F") },
     bnet      = { hex("82C5FF") },
+    party     = { hex("AAABFE") },
+    raid      = { hex("FF7F00") },
+    warning   = { hex("FF4800") },
 }
 
 -- r, g, b for a named color.

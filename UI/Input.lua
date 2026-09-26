@@ -33,6 +33,10 @@ end
 function Input.Send(text)
     local conv = currentConv()
     if not conv then return end
+    if conv.kind == "group" and not Hush.Groups.IsActive(conv) then
+        Hush:Print("This group has ended, messages can no longer be sent here.")
+        return false
+    end
     local parts = Data.SplitMessage(text)
     for _, part in ipairs(parts) do
         if not Compat.Send(conv, part) then
@@ -226,7 +230,12 @@ end, "Input")
 Hush:RegisterCallback("CONV_OPENED", function(_, _, conv)
     footer:SetHeight(FOOTER_H)
     footer:Show()
-    edit.placeholder:SetText("Message " .. shortName(conv))
+    if conv.kind == "group" then
+        local active = Hush.Groups.IsActive(conv)
+        edit.placeholder:SetText(active and ("Message " .. (conv.channel == "RAID" and "raid" or "party")) or "This group has ended")
+    else
+        edit.placeholder:SetText("Message " .. shortName(conv))
+    end
     if compose then compose:Hide() end
     layoutQuick()
 end, "Input")

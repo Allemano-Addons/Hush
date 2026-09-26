@@ -196,13 +196,13 @@ local function fillMsg(f, it)
         f.name:SetPoint("TOPLEFT", left, -10)
         f.name:SetText(name)
         f.name:SetTextColor(r, g, b)
-        f.time:SetText(date("%H:%M", m.t))
+        f.time:SetText(date("%H:%M", m.t) .. (m.k == "leader" and "  ·  Leader" or m.k == "warning" and "  ·  Raid warning" or ""))
         f.text:SetPoint("TOPLEFT", f.name, "BOTTOMLEFT", 0, -2)
     end
     f.text:SetWidth(textWidth())
     f.text:SetHeight(it.textH)
     f.text:SetText(m.m)
-    f.text:SetTextColor(Theme:Color(m.k == "gm" and "bnet" or "text"))
+    f.text:SetTextColor(Theme:Color(m.k == "gm" and "bnet" or m.k == "warning" and "warning" or "text"))
 end
 
 local function createDay()
