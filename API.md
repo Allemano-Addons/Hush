@@ -131,6 +131,7 @@ Getters are called every time the page is shown.
 | `CONV_UPDATED` | `conv` (player info, pin, module data) |
 | `CONV_MOVED` | `key, from, to` (`from` may be `"requests"`) |
 | `CONV_DELETED` | `key` |
+| `CONV_RENAMED` | `oldKey, newKey` – same player, the server's spelling (or merged duplicates) |
 | `CONV_OPENED` | `key, conv, firstUnread` – shown in the window |
 | `MESSAGE_ADDED` | `key, msg, conv` |
 | `UNREAD_CHANGED` | – |

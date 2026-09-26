@@ -460,3 +460,10 @@ Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
     end
 end, "Conversation")
 Hush:RegisterCallback("FONTS_CHANGED", function() Conv.Refresh(atBottom()) end, "Conversation")
+Hush:RegisterCallback("CONV_RENAMED", function(_, oldKey, newKey)
+    if current == oldKey then
+        current = newKey
+        Conv.Refresh(true)
+        Hush.Main.UpdateHeader(newKey)
+    end
+end, "Conversation")

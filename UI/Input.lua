@@ -191,7 +191,8 @@ end
 function Input.StartConversation(name)
     -- "sigrid" -> "Sigrid" (realm part untouched).
     local char, realm = strsplit("-", name, 2)
-    char = strupper(char:sub(1, 1)) .. strlower(char:sub(2))
+    -- "whissel ljud" -> "Whissel Ljud": capitalize every part of the name (surnames on WoW Forever).
+    char = char:gsub("(%S)(%S*)", function(first, rest) return strupper(first) .. strlower(rest) end)
     name = Compat.NormalizeName(realm and (char .. "-" .. realm) or char)
     if not name then return end
 

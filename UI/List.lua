@@ -499,3 +499,9 @@ end
 Hush:RegisterCallback("CONV_DELETED", function(_, key)
     if List.selected == key then List.selected = nil end
 end, "List")
+
+-- A conversation moved to a new key (server spelling / merged duplicates): keep the selection.
+Hush:RegisterCallback("CONV_RENAMED", function(_, oldKey, newKey)
+    if List.selected == oldKey then List.selected = newKey end
+    queueRefresh()
+end, "List")

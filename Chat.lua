@@ -76,6 +76,8 @@ local function onWhisper(event, text, sender, _, _, _, flags, _, _, _, _, _, gui
     if not name then return end
     local incoming = event == "CHAT_MSG_WHISPER"
     local key = Data.WhisperKey(name)
+    -- The server's spelling wins: fold conversations that only differ in letter case into this one.
+    for _, other in ipairs(Data.CaseVariants(name, key)) do Data.Rekey(other, key, name) end
 
     local info = Chat.LookupInfo(name)
     info.class = info.class or Compat.ClassFromGUID(guid)
@@ -355,3 +357,6 @@ end, "create a test conversation: /hush fakeconvo [name]")
 
 -- Hush can show whispers from now on, so the default-chat filter may hide them.
 Hush:RegisterCallback("READY", function() Hush.canDisplay = true end, "Chat")
+
+-- Merge conversations that only differ in letter case (created before names were matched case-insensitively).
+Hush:RegisterCallback("READY", function() Data.MergeCaseDuplicates() end, "Chat")

@@ -208,6 +208,92 @@ function Data.Delete(key)
     Hush:Fire("UNREAD_CHANGED")
 end
 
+-- ---------------------------------------------------------------------------
+-- Name casing: the server delivers whispers regardless of letter case, so a name
+-- typed as "whissel ljud" and the server's "Whissel Ljud" are the same player.
+-- The server's spelling wins; conversations that only differ in case are merged.
+-- ---------------------------------------------------------------------------
+
+-- Other whisper conversations whose name equals `name` ignoring case.
+function Data.CaseVariants(name, exceptKey)
+    local lname, found = strlower(name), {}
+    for key, conv in pairs(Data.All()) do
+        if key ~= exceptKey and conv.kind == "whisper" and conv.target and strlower(conv.target) == lname then
+            found[#found + 1] = key
+        end
+    end
+    return found
+end
+
+local function mergeInto(dst, src)
+    for _, m in ipairs(src.msgs) do dst.msgs[#dst.msgs + 1] = m end
+    sort(dst.msgs, function(a, b)
+        if a.t == b.t then return (a.n or 0) < (b.n or 0) end
+        return a.t < b.t
+    end)
+    while #dst.msgs > MAX_MESSAGES do tremove(dst.msgs, 1) end
+    for i, m in ipairs(dst.msgs) do m.n = i end
+    dst.seq = #dst.msgs
+    dst.unread = dst.unread + src.unread
+    dst.firstUnread = dst.unread > 0 and dst.msgs[max(1, #dst.msgs - dst.unread + 1)].n or nil
+    if src.last > dst.last then dst.last, dst.preview = src.last, src.preview end
+    dst.created = min(dst.created or src.created, src.created or dst.created)
+    dst.pinned = dst.pinned or src.pinned
+    dst.request = dst.request and src.request
+    if dst.category == "other" and src.category ~= "other" then dst.category = src.category end
+    dst.guid = dst.guid or src.guid
+    for k, v in pairs(src.info or {}) do if dst.info[k] == nil then dst.info[k] = v end end
+    for mod, t in pairs(src.mod or {}) do
+        local mine = dst.mod[mod]
+        if not mine or next(mine) == nil then
+            dst.mod[mod] = t
+        else
+            for k, v in pairs(t) do if mine[k] == nil then mine[k] = v end end
+        end
+    end
+end
+
+-- Move a conversation to newKey (merging if it exists) and use the server's spelling.
+function Data.Rekey(oldKey, newKey, name)
+    local convs = Hush.char.convs
+    local src = convs[oldKey]
+    if not src or oldKey == newKey then return end
+    local dst = convs[newKey]
+    if dst then
+        mergeInto(dst, src)
+    else
+        convs[newKey] = src
+        src.target, src.display = name, name
+    end
+    convs[oldKey] = nil
+    if Hush.char.lastWhisper == oldKey then Hush.char.lastWhisper = newKey end
+    Hush:Fire("CONV_RENAMED", oldKey, newKey)
+    Hush:Fire("UNREAD_CHANGED")
+end
+
+-- Merge existing case duplicates (from before this fix). Keeps the one with most messages.
+function Data.MergeCaseDuplicates()
+    local groups = {}
+    for key, conv in pairs(Data.All()) do
+        if conv.kind == "whisper" and conv.target then
+            local l = strlower(conv.target)
+            groups[l] = groups[l] or {}
+            tinsert(groups[l], key)
+        end
+    end
+    for _, keys in pairs(groups) do
+        if #keys > 1 then
+            sort(keys, function(a, b)
+                local ca, cb = Data.Get(a), Data.Get(b)
+                if #ca.msgs ~= #cb.msgs then return #ca.msgs > #cb.msgs end
+                return ca.last > cb.last
+            end)
+            local keep = keys[1]
+            for i = 2, #keys do Data.Rekey(keys[i], keep, Data.Get(keep).target) end
+        end
+    end
+end
+
 -- Deletes every conversation of this character. Categories and settings are kept.
 function Data.ClearAll()
     local keys = {}

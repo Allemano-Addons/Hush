@@ -123,3 +123,8 @@
 
 ## 0.1.4 – 2026-09-27
 - Module API: `Hush.AddHeaderInfo(fn, owner)` adds text to the header info line.
+
+## 0.1.5 – 2026-09-27
+- Fix: a conversation started with "+" using different letter case ("whissel ljud") and the server's spelling ("Whissel Ljud") became two chats, so sent messages ended up in the other one. Names are now matched ignoring case: the server's spelling wins and case duplicates are merged (messages, category, pin and module data). Existing duplicates are merged at login.
+- "+ New message" capitalizes every part of the name (surnames on WoW Forever).
+- New event `CONV_RENAMED(oldKey, newKey)`.
