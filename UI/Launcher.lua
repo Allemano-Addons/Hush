@@ -23,7 +23,8 @@ local function restorePosition()
     if d.left and d.top then
         button:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", d.left, d.top)
     else
-        button:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -240, -12)
+        -- Top center: free on most UIs (the top-right corner is usually minimap and buffs).
+        button:SetPoint("TOP", UIParent, "TOP", 0, -8)
     end
 end
 
@@ -49,7 +50,7 @@ end
 local function build()
     button = CreateFrame("Button", nil, UIParent)
     button:SetSize(SIZE, SIZE)
-    button:SetFrameStrata("MEDIUM")
+    button:SetFrameStrata("HIGH")
     button:SetClampedToScreen(true)
     button:SetMovable(true)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
