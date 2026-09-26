@@ -190,6 +190,13 @@ function API.AddStatusChip(fn, owner)
 end
 
 -- def = { id, text, tooltip, onClick = fn(key, conv), isShown = fn(key, conv) (optional) }
+-- fn(key, conv) -> text appended to the header info line (class · level · guild · zone · ...).
+function API.AddHeaderInfo(fn, owner)
+    assert(type(fn) == "function", "Hush.AddHeaderInfo: fn required")
+    tinsert(Hush.Main.infoProviders, { fn = fn, owner = owner })
+    API.RefreshHeader()
+end
+
 function API.AddHeaderButton(def, owner)
     assert(type(def) == "table" and def.text and def.onClick, "Hush.AddHeaderButton: text and onClick required")
     tinsert(Hush.Main.headerButtons, { def = def, owner = owner })

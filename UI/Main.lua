@@ -393,6 +393,7 @@ end
 -- ---------------------------------------------------------------------------
 
 Main.chipProviders = {}   -- { fn(key, conv) -> text, r, g, b ; owner }
+Main.infoProviders = {}   -- { fn(key, conv) -> text appended to the meta line ; owner }
 Main.headerButtons = {}   -- { def = { id, text, tooltip, onClick, isShown }, owner, button }
 
 local function updateChip(header, key, conv)
@@ -495,6 +496,15 @@ function Main.UpdateHeader(key)
             parts[#parts + 1] = Hush.Groups.MemberCount() .. " members"
         else
             parts[#parts + 1] = "Ended" .. (conv.ended and (" " .. date("%d/%m %H:%M", conv.ended)) or "")
+        end
+    end
+    -- Extra info from modules (e.g. a recruit note).
+    for _, p in ipairs(Main.infoProviders) do
+        local ok, extra = pcall(p.fn, key, conv)
+        if not ok then
+            geterrorhandler()(extra)
+        elseif extra and extra ~= "" then
+            parts[#parts + 1] = extra
         end
     end
     header.meta:SetText(table.concat(parts, "  ·  "))

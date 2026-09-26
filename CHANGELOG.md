@@ -120,3 +120,6 @@
 
 ## 0.1.3 – 2026-09-27
 - Module API: `Hush.SplitMessage(text)`.
+
+## 0.1.4 – 2026-09-27
+- Module API: `Hush.AddHeaderInfo(fn, owner)` adds text to the header info line.

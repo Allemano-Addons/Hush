@@ -86,6 +86,7 @@ Built-in ids: `pinned` (virtual), `guild`, `recruits`, `other`.
 |---|---|
 | `Hush.AddStatusChip(fn, owner)` | `fn(key, conv) → text [, r, g, b]` or `nil`. The first provider with text wins; default color is the accent. |
 | `Hush.AddHeaderButton(def, owner)` | `def = { id, text, tooltip, onClick = fn(key, conv), isShown = fn(key, conv) }`. |
+| `Hush.AddHeaderInfo(fn, owner)` | `fn(key, conv) → text` appended to the info line under the name. |
 | `Hush.RefreshHeader()` | Re-run chips and `isShown` for the open conversation. |
 
 ## Context menu and settings
