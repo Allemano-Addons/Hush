@@ -210,12 +210,6 @@ local function debugReport()
     Hush:Print("fonts:", T.fontStatus)
     if T.fontDiag and T.fontStatus ~= "Barlow ok" then
         for key, diag in pairs(T.fontDiag) do Hush:Print(("  %s: %s"):format(key, diag)) end
-        -- Control: a font from another addon that is known to work on this client.
-        local probe = UIParent:CreateFontString(nil, "BACKGROUND")
-        local ok = probe:SetFont("Interface\\AddOns\\EllesmereUI\\media\\fonts\\Expressway.TTF", 12, "")
-        Hush:Print("  control (EllesmereUI Expressway): SetFont=" .. tostring(ok))
-        local ok2 = probe:SetFont("Interface\\AddOns\\Hush\\Media\\Fonts\\Barlow-Regular.ttf", 12, "")
-        Hush:Print("  retry Barlow-Regular now: SetFont=" .. tostring(ok2))
     end
     local names = {}
     for k in pairs(C.features) do names[#names + 1] = k end
@@ -225,16 +219,30 @@ local function debugReport()
     end
 end
 
+-- Subcommands: other files add their own with Hush:AddSlashCommand.
+local slashCommands, slashOrder = {}, {}
+
+function Hush:AddSlashCommand(name, fn, help)
+    if not slashCommands[name] then slashOrder[#slashOrder + 1] = name end
+    slashCommands[name] = { fn = fn, help = help }
+end
+
+Hush:AddSlashCommand("debug", debugReport, "client and addon diagnostics")
+Hush:AddSlashCommand("version", function() Hush:Print("v" .. tostring(Hush.version)) end, "show version")
+
 SLASH_HUSH1 = "/hush"
 SlashCmdList.HUSH = function(msg)
-    local cmd = strlower(strtrim(msg or ""))
+    msg = strtrim(msg or "")
+    local cmd, rest = msg:match("^(%S*)%s*(.-)$")
+    cmd = strlower(cmd or "")
     if cmd == "" then
         Hush:Toggle()
-    elseif cmd == "debug" then
-        debugReport()
-    elseif cmd == "version" then
-        Hush:Print("v" .. tostring(Hush.version))
+    elseif slashCommands[cmd] then
+        slashCommands[cmd].fn(rest)
     else
-        Hush:Print("/hush - open/close, /hush debug, /hush version")
+        Hush:Print("/hush - open/close")
+        for _, name in ipairs(slashOrder) do
+            Hush:Print(("/hush %s - %s"):format(name, slashCommands[name].help or ""))
+        end
     end
 end
