@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Hush
 ## Notes: Modern whisper messenger for WoW Forever
-## Version: 0.1.1
+## Version: 0.1.2
 ## SavedVariables: HushDB
 
 Core.lua

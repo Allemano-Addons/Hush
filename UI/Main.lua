@@ -136,6 +136,25 @@ end
 -- Build
 -- ---------------------------------------------------------------------------
 
+-- Buttons added by modules (Hush.AddTitleButton), placed left of "New message".
+Main.titleButtons = {}
+
+function Main.LayoutTitleButtons()
+    if not frame or not frame.titleRow then return end
+    local anchor = frame.titleAnchor
+    for _, tb in ipairs(Main.titleButtons) do
+        if not tb.button then
+            tb.button = W.IconButton(frame.titleRow, tb.def.icon or "plus", 22, tb.def.tooltip, function()
+                local ok, err = pcall(tb.def.onClick)
+                if not ok then geterrorhandler()(err) end
+            end, tb.def.glyph or "?")
+        end
+        tb.button:ClearAllPoints()
+        tb.button:SetPoint("RIGHT", anchor, "LEFT", -2, 0)
+        anchor = tb.button
+    end
+end
+
 local function buildSidebar()
     local side = CreateFrame("Frame", nil, frame)
     side:SetPoint("TOPLEFT")
@@ -171,6 +190,8 @@ local function buildSidebar()
         Hush:Fire("NEW_MESSAGE")
     end, "+")
     newBtn:SetPoint("RIGHT", settingsBtn, "LEFT", -2, 0)
+    frame.titleRow, frame.titleAnchor = title, newBtn
+    Main.LayoutTitleButtons()
 
     -- Search
     local search = W.EditBox(side, "Search", S.searchH)

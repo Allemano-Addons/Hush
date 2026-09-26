@@ -217,6 +217,12 @@ local ICONS = {
         local a, b = line(f, -q * 0.75, q * 1.5, q * 0.75, 0, 1.5), line(f, q * 0.75, 0, -q * 0.75, -q * 1.5, 1.5)
         if a then return { a, b } end
     end,
+    person = function(f, s) -- head and shoulders
+        return { rect(f, s / 2 - 2, 0, 4, 4), rect(f, 1, s - 4, s - 2, 4) }
+    end,
+    megaphone = function(f, s) -- small box + widening horn
+        return { rect(f, 0, s / 2 - 2, 3, 4), rect(f, 3, s / 2 - 3, 2, 6), rect(f, 5, s / 2 - 4, 2, 8), rect(f, 7, 0, 2, s) }
+    end,
     more = function(f, s) -- three dots
         local m = s / 2 - 1
         return { rect(f, 0, m, 2, 2), rect(f, m, m, 2, 2), rect(f, s - 2, m, 2, 2) }

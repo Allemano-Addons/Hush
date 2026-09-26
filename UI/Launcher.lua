@@ -35,16 +35,30 @@ function Launcher.Update()
     button.badge:SetCount(byTab.whispers + byTab.requests)
 end
 
+-- Extra entries from modules (Hush.AddLauncherMenuItems): fn() -> item or { items }.
+Launcher.extraItems = {}
+
 local function openMenu()
     local d = db()
-    W.OpenMenu({
+    local items = {
         { text = Hush.Main.IsShown() and "Close Hush" or "Open Hush", onClick = function() Hush.Main.Toggle() end },
         { text = "Reply to last whisper", onClick = function() Hush.API.ReplyLast() end },
         { text = "Settings", onClick = function() Hush.Main.Show() Hush:Fire("OPEN_SETTINGS") end },
-        { separator = true },
-        { text = "Lock position", checked = d.locked == true, onClick = function() d.locked = not d.locked end },
-        { text = "Hide button", onClick = function() Launcher.SetHidden(true) end },
-    })
+    }
+    for _, fn in ipairs(Launcher.extraItems) do
+        local ok, extra = pcall(fn)
+        if ok and extra then
+            if extra.text or extra.separator then extra = { extra } end
+            items[#items + 1] = { separator = true }
+            for _, it in ipairs(extra) do items[#items + 1] = it end
+        elseif not ok then
+            geterrorhandler()(extra)
+        end
+    end
+    items[#items + 1] = { separator = true }
+    items[#items + 1] = { text = "Lock position", checked = d.locked == true, onClick = function() d.locked = not d.locked end }
+    items[#items + 1] = { text = "Hide button", onClick = function() Launcher.SetHidden(true) end }
+    W.OpenMenu(items)
 end
 
 local function build()

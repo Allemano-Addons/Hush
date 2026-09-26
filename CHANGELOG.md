@@ -114,3 +114,6 @@
 - "Automatic" (default): game font for text, Barlow Condensed for headings when another addon provides it.
 - New dropdown widget; menus can open below a button and preview fonts. Settings panel is taller (620 px).
 - `/hush debug` shows the fonts in use.
+
+## 0.1.2 – 2026-09-27
+- Module API (additive, `apiVersion` stays 1): `Hush.AddTitleButton`, `Hush.AddLauncherMenuItems`, `Hush.IsGuildMember`, `Hush.CanGuildInvite`, `Hush.GuildInvite`, `Hush.InviteToGroup`. New icons: `person`, `megaphone`.

@@ -94,6 +94,16 @@ Built-in ids: `pinned` (virtual), `guild`, `recruits`, `other`.
 | `Hush.AddChatMenuItems(fn)` | `fn(key, conv) → item or { items }` added to the chat right-click menu. `item = { text, onClick, disabled, danger, checked, submenu = { items }, separator = true }` |
 | `Hush.AddSettingsPage(def)` | `def = { id, label, build = function(page) end }`, a page in the settings menu. |
 | `Hush.OpenSettings(id)` | Open the settings, optionally on a page. |
+| `Hush.AddTitleButton(def)` | Icon button in the title row. `def = { icon = "person" | "megaphone" | "plus" | "settings" | "more", glyph, tooltip, onClick }` |
+| `Hush.AddLauncherMenuItems(fn)` | `fn() → item or { items }` added to the launcher right-click menu. |
+
+## Guild and group
+
+| Function | Description |
+|---|---|
+| `Hush.IsGuildMember(name)` | From the cached guild roster. |
+| `Hush.CanGuildInvite()` / `Hush.GuildInvite(name)` | |
+| `Hush.InviteToGroup(name)` | |
 | `Hush.ShowDialog(opts)` | Confirm or text prompt inside the Hush window. `opts = { title, text, input, okText, danger, onOk = fn(value) }` |
 
 Page builder (`page` in `build`), rows are stacked top to bottom:

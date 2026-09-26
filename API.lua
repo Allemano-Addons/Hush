@@ -217,6 +217,26 @@ function API.ShowDialog(opts)
     return Hush.Widgets.Dialog(Hush.Main.frame, opts)
 end
 
+-- A small icon button in the title row, left of "New message".
+-- def = { icon = "person" | "megaphone" | "plus" | "settings" | "more", glyph = fallback text, tooltip, onClick }
+function API.AddTitleButton(def)
+    assert(type(def) == "table" and def.onClick, "Hush.AddTitleButton: onClick required")
+    tinsert(Hush.Main.titleButtons, { def = def })
+    Hush.Main.LayoutTitleButtons()
+end
+
+-- fn() -> item or { items } added to the launcher right-click menu.
+function API.AddLauncherMenuItems(fn)
+    assert(type(fn) == "function", "Hush.AddLauncherMenuItems: fn required")
+    tinsert(Hush.Launcher.extraItems, fn)
+end
+
+-- Guild and group helpers (WoW Forever differences are handled inside Hush).
+function API.IsGuildMember(name) return Hush.Chat.IsGuildMember(Hush.Compat.NormalizeName(name)) end
+function API.CanGuildInvite() return Hush.Compat.CanGuildInvite() end
+function API.GuildInvite(name) Hush.Compat.GuildInvite(name) end
+function API.InviteToGroup(name) Hush.Compat.InviteToGroup(name) end
+
 -- Open the settings, optionally on a page id.
 function API.OpenSettings(id)
     Hush.Settings.Open(id)
