@@ -17,3 +17,9 @@
 - Unknown players land in Requests until you reply or move them. Guild members and friends skip Requests.
 - Default-chat filter: hides whispers only outside combat, never GM whispers. Active once the conversation view exists (test with `/hush filtertest`).
 - Test commands: `/hush dump [name]`, `/hush fake <name> <text>`, `/hush read <name>`, `/hush move <name> <category>`.
+
+### Step 3 – Main window
+- `Widgets.lua`: flat building blocks – pixel-perfect lines and borders (re-sized on UI scale change), text, icon buttons drawn from lines, text buttons (default/accent/ghost), edit box with placeholder, unread badge, own tooltip, frame pool. Accent color and text size update live.
+- `UI/Main.lua`: 1000×620 window, movable (title row or header), resizable (bottom-right grip), position and size saved on whole pixels. Sidebar with HUSH title, new message + settings buttons, search field, Whispers/Groups/Requests tabs with accent underline and unread badges, "+ New category". Conversation pane with header, close button and empty state.
+- ESC closes the window (keyboard is never captured in combat).
+- `/hush reset` restores window position and size.
