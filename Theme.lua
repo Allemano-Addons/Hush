@@ -80,20 +80,31 @@ Theme.fonts = {
 }
 Theme.fontStatus = "not checked"
 
+local function normalizePath(p)
+    return p and strlower((p:gsub("/", "\\"))) or ""
+end
+
+local probe
+-- Returns loaded (bool) and a short diagnostic string.
 local function fontLoads(path)
-    local probe = UIParent:CreateFontString(nil, "BACKGROUND")
+    probe = probe or UIParent:CreateFontString(nil, "BACKGROUND")
     probe:SetFont(FALLBACK, 12, "")
     local ok = probe:SetFont(path, 12, "")
     local current = probe:GetFont()
-    probe:Hide()
-    if ok == false then return false end
-    return current ~= nil and strlower(current) == strlower(path)
+    local diag = ("SetFont=%s GetFont=%s"):format(tostring(ok), tostring(current))
+    -- Newer clients report success directly; older ones return nil, so compare paths.
+    if ok == true then return true, diag end
+    if ok == false then return false, diag end
+    return normalizePath(current) == normalizePath(path), diag
 end
 
 function Theme:CheckFonts()
     local missing = {}
+    self.fontDiag = {}
     for key, path in pairs(self.fonts) do
-        if not fontLoads(path) then
+        local loaded, diag = fontLoads(path)
+        self.fontDiag[key] = diag
+        if not loaded then
             self.fonts[key] = FALLBACK
             missing[#missing + 1] = key
         end
