@@ -51,3 +51,4 @@
 - Quick replies as buttons above the field (`{name}` = the other player's name): click fills the field, shift-click sends.
 - "New message" (+): type a character name in the header to open or start a conversation (reuses an existing one regardless of letter case).
 - Default-chat filter is now active: whispers are hidden there outside combat and `/r` still works. `/hush filter` toggles it (saved).
+- Auto-open: an incoming whisper opens Hush on that conversation when the window is closed (on by default, schema 2 turns it on for existing installs). Never in combat, never for Requests, never steals keyboard focus, never switches away from an open conversation. Sent whispers can do the same (`autoOpenOut`, off by default).

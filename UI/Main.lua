@@ -394,6 +394,19 @@ function Main.UpdateHeader(key)
     header.meta:SetText(table.concat(parts, "  ·  "))
 end
 
+-- Auto-open: incoming (or sent) whisper opens Hush on that conversation when the window is
+-- closed. Never in combat, never for Requests, never steals keyboard focus, never switches
+-- away from a conversation that is already open.
+Hush:RegisterCallback("MESSAGE_ADDED", function(_, key, msg, conv)
+    if conv.kind == "group" or msg.d == "sys" or conv.request then return end
+    if Main.IsShown() or Hush.Compat.InCombat() then return end
+    local s = Hush.settings
+    if (msg.d == "in" and s.autoOpenIn) or (msg.d == "out" and s.autoOpenOut) then
+        Main.Show()
+        Hush.List.Select(key)
+    end
+end, "Main")
+
 Hush:RegisterCallback("CONV_OPENED", function(_, key) Main.UpdateHeader(key) end, "Main")
 Hush:RegisterCallback("CONV_UPDATED", function(_, conv)
     local key = Hush.List.selected

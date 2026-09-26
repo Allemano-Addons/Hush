@@ -2,7 +2,7 @@
 local addonName, Hush = ...
 
 Hush.name = addonName
-Hush.SCHEMA = 1
+Hush.SCHEMA = 2
 
 -- ---------------------------------------------------------------------------
 -- Printing
@@ -97,7 +97,7 @@ local DEFAULT_SETTINGS = {
     timestamps = true,
     hideWhispers = true,     -- hide whispers in the default chat (never while in combat)
     hideInCombat = true,     -- hide the Hush window while in combat
-    autoOpenIn = false,
+    autoOpenIn = true,
     autoOpenOut = false,
     fadeWhenMoving = true,
     sound = true,
@@ -131,7 +131,12 @@ local function fillDefaults(dst, src)
 end
 
 -- Schema migrations: MIGRATIONS[n] upgrades a DB from schema n-1 to n.
-local MIGRATIONS = {}
+local MIGRATIONS = {
+    -- 2: auto-open on incoming whispers became the default.
+    [2] = function(db)
+        if db.settings then db.settings.autoOpenIn = true end
+    end,
+}
 
 local function initDB()
     if type(HushDB) ~= "table" then HushDB = {} end
