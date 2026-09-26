@@ -134,7 +134,8 @@ function W.ShowTooltip(owner, text)
         tip = CreateFrame("Frame", nil, UIParent)
         tip:SetFrameStrata("TOOLTIP")
         tip:SetClampedToScreen(true)
-        W.Fill(tip, "field", 0.98)
+        tip.bg = W.Fill(tip, "field", 0.98)
+        tip.bg:SetAllPoints()
         W.Border(tip, "line")
         tip.text = W.Text(tip, "regular", -1, "text")
         tip.text:SetPoint("CENTER")
@@ -737,6 +738,137 @@ function W.Dialog(parent, opts)
         d.edit:HighlightText()
     end
     return d
+end
+
+-- ---------------------------------------------------------------------------
+-- Settings controls: toggle switch, segmented choice, slider, color swatch.
+-- Each has :Set(value) (no callback) and calls onChange(value) on user input.
+-- ---------------------------------------------------------------------------
+
+function W.Toggle(parent, onChange)
+    local t = CreateFrame("Button", nil, parent)
+    t:SetSize(32, 16)
+    t.track = t:CreateTexture(nil, "BACKGROUND")
+    t.track:SetAllPoints()
+    t.knob = t:CreateTexture(nil, "ARTWORK")
+    t.knob:SetSize(12, 12)
+    function t:Set(on)
+        self.value = on and true or false
+        self.knob:ClearAllPoints()
+        if self.value then
+            self.track:SetColorTexture(Theme:Accent())
+            self.knob:SetColorTexture(Theme:Color("sidebar"))
+            self.knob:SetPoint("RIGHT", -2, 0)
+        else
+            self.track:SetColorTexture(Theme:Color("line"))
+            self.knob:SetColorTexture(Theme:Color("textDim"))
+            self.knob:SetPoint("LEFT", 2, 0)
+        end
+    end
+    W.OnAccent(function() if t.value ~= nil then t:Set(t.value) end end)
+    t:SetScript("OnClick", function(self)
+        self:Set(not self.value)
+        if onChange then onChange(self.value) end
+    end)
+    t:Set(false)
+    return t
+end
+
+-- options: { { value = "S", label = "S" }, ... }
+function W.Segment(parent, options, onChange)
+    local s = CreateFrame("Frame", nil, parent)
+    s:SetHeight(24)
+    s.buttons = {}
+    local x = 0
+    for i, opt in ipairs(options) do
+        local b = CreateFrame("Button", nil, s)
+        b.value = opt.value
+        b.bg = W.Fill(b, "field", 1)
+        b.bg:SetAllPoints()
+        b.text = W.Text(b, "semibold", -1, "textDim")
+        b.text:SetPoint("CENTER")
+        b.text:SetText(opt.label)
+        local w = max(36, b.text:GetStringWidth() + 20)
+        b:SetSize(w, 24)
+        b:SetPoint("LEFT", x, 0)
+        x = x + w + 2
+        b:SetScript("OnClick", function(self)
+            s:Set(self.value)
+            if onChange then onChange(self.value) end
+        end)
+        b:SetScript("OnEnter", function(self) if self.value ~= s.value then self.text:SetTextColor(Theme:Color("text")) end end)
+        b:SetScript("OnLeave", function() s:Set(s.value) end)
+        s.buttons[i] = b
+    end
+    s:SetWidth(x - 2)
+    W.Border(s, "line")
+    function s:Set(value)
+        self.value = value
+        local r, g, bl = Theme:Accent()
+        for _, b in ipairs(self.buttons) do
+            if b.value == value then
+                b.bg:SetColorTexture(r, g, bl, 1)
+                b.text:SetTextColor(Theme:Color("sidebar"))
+            else
+                b.bg:SetColorTexture(Theme:Color("field"))
+                b.text:SetTextColor(Theme:Color("textDim"))
+            end
+        end
+    end
+    W.OnAccent(function() if s.value ~= nil then s:Set(s.value) end end)
+    return s
+end
+
+-- Horizontal slider. format(value) -> label text.
+function W.Slider(parent, minV, maxV, step, width, format, onChange)
+    local s = CreateFrame("Slider", nil, parent)
+    s:SetOrientation("HORIZONTAL")
+    s:SetSize(width or 200, 16)
+    s:SetMinMaxValues(minV, maxV)
+    s:SetValueStep(step)
+    if s.SetObeyStepOnDrag then s:SetObeyStepOnDrag(true) end
+    s.track = W.Fill(s, "line", 1, "BACKGROUND")
+    s.track:SetPoint("LEFT")
+    s.track:SetPoint("RIGHT")
+    s.track:SetHeight(2)
+    local thumb = s:CreateTexture(nil, "OVERLAY")
+    thumb:SetSize(10, 16)
+    s:SetThumbTexture(thumb)
+    W.OnAccent(function(r, g, b) thumb:SetColorTexture(r, g, b, 1) end)
+    s.label = W.Text(s, "regular", -1, "textDim")
+    s.label:SetPoint("LEFT", s, "RIGHT", 10, 0)
+    s.silent = false
+    s:SetScript("OnValueChanged", function(self, value)
+        value = floor(value / step + 0.5) * step
+        self.label:SetText(format and format(value) or tostring(value))
+        if not self.silent and onChange then onChange(value) end
+    end)
+    s:EnableMouseWheel(false)
+    function s:Set(value)
+        self.silent = true
+        self:SetValue(value)
+        self.label:SetText(format and format(value) or tostring(value))
+        self.silent = false
+    end
+    return s
+end
+
+-- Square color swatch with a selection ring.
+function W.Swatch(parent, r, g, b, tooltip, onClick)
+    local s = CreateFrame("Button", nil, parent)
+    s:SetSize(22, 22)
+    s.ring = W.Border(s, "line")
+    s.fill = s:CreateTexture(nil, "ARTWORK")
+    s.fill:SetPoint("TOPLEFT", 3, -3)
+    s.fill:SetPoint("BOTTOMRIGHT", -3, 3)
+    s.fill:SetColorTexture(r, g, b, 1)
+    function s:SetSelected(on)
+        if on then self.ring:SetColor(Theme:Color("text")) else self.ring:SetColor(Theme:Color("line")) end
+    end
+    s:SetScript("OnEnter", function(self) if tooltip then W.ShowTooltip(self, tooltip) end end)
+    s:SetScript("OnLeave", function() W.HideTooltip() end)
+    s:SetScript("OnClick", function() if onClick then onClick() end end)
+    return s
 end
 
 -- Resize bounds differ between client generations.
