@@ -112,6 +112,12 @@ function API.SendMessage(key, text)
     return true
 end
 
+-- Split text into parts of at most 255 bytes at word boundaries (never inside links
+-- or multi-byte characters). Returns a list of strings.
+function API.SplitMessage(text)
+    return data().SplitMessage(text)
+end
+
 -- Per-module data stored with the conversation (saved). Returns a table you may write to.
 function API.GetModuleData(key, module)
     assert(type(module) == "string", "Hush.GetModuleData: module name required")

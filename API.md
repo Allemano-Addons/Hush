@@ -48,6 +48,7 @@ Keys: `W:<name>` whisper (name via `Ambiguate(name, "none")`), `B:<BattleTag>` B
 | `Hush.MoveConversation(key, categoryId)` | Move (also unpins and accepts a request). |
 | `Hush.SetPinned(key, pinned)` / `Hush.MarkRead(key)` | |
 | `Hush.SendMessage(key, text)` | Send; split at 255 characters like the input. |
+| `Hush.SplitMessage(text)` | Split text into parts of max 255 bytes (word boundaries, links and UTF-8 kept intact). |
 | `Hush.GetModuleData(key, module)` | Your saved table on that conversation (created on demand). |
 | `Hush.SetModuleData(key, module, field, value)` | Set one field and refresh the UI. |
 | `Hush.NotifyChanged(key)` | Refresh list/header after changing module data yourself. |

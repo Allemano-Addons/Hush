@@ -117,3 +117,6 @@
 
 ## 0.1.2 – 2026-09-27
 - Module API (additive, `apiVersion` stays 1): `Hush.AddTitleButton`, `Hush.AddLauncherMenuItems`, `Hush.IsGuildMember`, `Hush.CanGuildInvite`, `Hush.GuildInvite`, `Hush.InviteToGroup`. New icons: `person`, `megaphone`.
+
+## 0.1.3 – 2026-09-27
+- Module API: `Hush.SplitMessage(text)`.
