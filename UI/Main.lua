@@ -162,15 +162,15 @@ local function buildSidebar()
     name:SetPoint("LEFT", square, "RIGHT", 8, 0)
     name:SetText("HUSH")
 
-    local settingsBtn = W.IconButton(title, "settings", 24, "Settings", function()
+    local settingsBtn = W.IconButton(title, "settings", 22, "Settings", function()
         Hush:Fire("OPEN_SETTINGS")
     end, "=")
-    settingsBtn:SetPoint("RIGHT", -S.padding + 4, 0)
+    settingsBtn:SetPoint("RIGHT", -S.padding, 0)
 
-    local newBtn = W.IconButton(title, "plus", 24, "New message", function()
+    local newBtn = W.IconButton(title, "plus", 22, "New message", function()
         Hush:Fire("NEW_MESSAGE")
     end, "+")
-    newBtn:SetPoint("RIGHT", settingsBtn, "LEFT", -4, 0)
+    newBtn:SetPoint("RIGHT", settingsBtn, "LEFT", -2, 0)
 
     -- Search
     local search = W.EditBox(side, "Search", S.searchH)

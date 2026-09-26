@@ -133,6 +133,7 @@ function W.ShowTooltip(owner, text)
     if not tip then
         tip = CreateFrame("Frame", nil, UIParent)
         tip:SetFrameStrata("TOOLTIP")
+        tip:SetClampedToScreen(true)
         W.Fill(tip, "field", 0.98)
         W.Border(tip, "line")
         tip.text = W.Text(tip, "regular", -1, "text")
@@ -141,7 +142,12 @@ function W.ShowTooltip(owner, text)
     tip.text:SetText(text)
     tip:SetSize(tip.text:GetStringWidth() + 16, tip.text:GetStringHeight() + 10)
     tip:ClearAllPoints()
-    tip:SetPoint("BOTTOM", owner, "TOP", 0, 4)
+    -- Below the owner (keeps it inside the window near the title row); above near the screen bottom.
+    if (owner:GetBottom() or 100) * owner:GetEffectiveScale() < 80 then
+        tip:SetPoint("BOTTOM", owner, "TOP", 0, 4)
+    else
+        tip:SetPoint("TOP", owner, "BOTTOM", 0, -4)
+    end
     tip:Show()
 end
 
@@ -153,9 +159,10 @@ end
 -- Icons drawn from lines (no texture files needed).
 -- ---------------------------------------------------------------------------
 
-local function rect(frame, x, y, w, h)
-    local t = frame:CreateTexture(nil, "ARTWORK")
-    t:SetPoint("CENTER", frame, "CENTER", x, y)
+-- Rectangles are placed from the icon box's top-left on whole pixels, so they stay crisp.
+local function rect(box, x, y, w, h)
+    local t = box:CreateTexture(nil, "ARTWORK")
+    t:SetPoint("TOPLEFT", box, "TOPLEFT", x, -y)
     t:SetSize(w, h)
     return t
 end
@@ -172,7 +179,8 @@ end
 -- Returns a list of textures/lines forming the icon, centered in frame.
 local ICONS = {
     plus = function(f, s)
-        return { rect(f, 0, 0, s, 2), rect(f, 0, 0, 2, s) }
+        local m = s / 2 - 1
+        return { rect(f, 0, m, s, 2), rect(f, m, 0, 2, s) }
     end,
     close = function(f, s)
         local h = s / 2
@@ -180,13 +188,12 @@ local ICONS = {
         if a then return { a, b } end
         return nil
     end,
-    settings = function(f, s) -- three sliders
-        local h = s / 2
+    settings = function(f, s) -- three sliders with knobs
         local parts = {}
-        for i, knob in ipairs({ -h * 0.4, h * 0.5, -h * 0.1 }) do
-            local y = (2 - i) * (s / 3)
-            parts[#parts + 1] = rect(f, 0, y, s, 1)
-            parts[#parts + 1] = rect(f, knob, y, 3, 5)
+        local rows = { { y = 1, knob = 2 }, { y = s / 2, knob = s - 4 }, { y = s - 1, knob = 4 } }
+        for _, row in ipairs(rows) do
+            parts[#parts + 1] = rect(f, 0, row.y, s, 1)
+            parts[#parts + 1] = rect(f, row.knob - 1, row.y - 2, 2, 5)
         end
         return parts
     end,
@@ -203,7 +210,12 @@ local ICONS = {
 
 -- Draw an icon; falls back to a text glyph if lines are not supported.
 function W.Icon(frame, name, size, fallbackGlyph)
-    local parts = ICONS[name] and ICONS[name](frame, size)
+    -- An even-sized box centered in the (even-sized) button keeps whole-pixel positions.
+    size = size - size % 2
+    local box = CreateFrame("Frame", nil, frame)
+    box:SetSize(size, size)
+    box:SetPoint("CENTER")
+    local parts = ICONS[name] and ICONS[name](box, size)
     if parts and #parts > 0 then
         local icon = { parts = parts }
         function icon:SetColor(r, g, b, a)
@@ -228,7 +240,7 @@ function W.IconButton(parent, iconName, size, tooltip, onClick, fallbackGlyph)
     b.bg = W.Fill(b, "selected", 1)
     b.bg:SetAllPoints()
     b.bg:Hide()
-    b.icon = W.Icon(b, iconName, floor((size or 24) * 0.5), fallbackGlyph)
+    b.icon = W.Icon(b, iconName, 10, fallbackGlyph)
     b.icon:SetColor(Theme:Color("textDim"))
     b:SetScript("OnEnter", function(self)
         self.bg:Show()
