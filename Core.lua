@@ -252,3 +252,20 @@ SlashCmdList.HUSH = function(msg)
         end
     end
 end
+
+-- Lists the functions in an API table, e.g. /hush api C_PartyInfo invite
+Hush:AddSlashCommand("api", function(arg)
+    local name, filter = arg:match("^(%S+)%s*(.*)$")
+    local t = name and _G[name]
+    if type(t) ~= "table" then
+        Hush:Print(tostring(name), "does not exist on this client")
+        return
+    end
+    filter = strlower(filter or "")
+    local found = {}
+    for k, v in pairs(t) do
+        if type(v) == "function" and (filter == "" or strlower(k):find(filter, 1, true)) then found[#found + 1] = k end
+    end
+    sort(found)
+    Hush:Print(name .. ":", #found > 0 and table.concat(found, ", ") or "(no matches)")
+end, "list API functions: /hush api <table> [filter]")

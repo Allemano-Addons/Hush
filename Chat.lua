@@ -84,6 +84,8 @@ local function onWhisper(event, text, sender, _, _, _, flags, _, _, _, _, _, gui
         kind = "whisper", target = name, display = name, info = info,
         request = incoming and not isKnown(name) and flags ~= "GM",
     })
+    -- Unique id of the character: first names are not unique on WoW Forever (surnames).
+    if guid and guid ~= "" then conv.guid = guid end
     if not created then Data.UpdateInfo(conv, info) end
 
     Data.AddMessage(key, {

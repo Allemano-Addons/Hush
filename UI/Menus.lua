@@ -31,8 +31,12 @@ function Menus.ChatItems(key)
                 local cat = cats.byId[id]
                 sub[#sub + 1] = {
                     text = cat.name,
-                    checked = not conv.request and conv.category == id,
-                    onClick = function() Data.Move(key, id) end,
+                    checked = not conv.request and not conv.pinned and conv.category == id,
+                    onClick = function()
+                        -- A pinned chat always shows under Pinned, so moving it also unpins (like drag and drop).
+                        if conv.pinned then Data.SetPinned(key, false) end
+                        Data.Move(key, id)
+                    end,
                 }
             end
         end
