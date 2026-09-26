@@ -92,3 +92,15 @@
 - Bubbles message style: own messages right-aligned in an accent-tinted bubble, others left in a dark bubble, sized to the text.
 - New widgets: toggle switch, segmented control, slider, color swatch. Page builder usable by modules (`Settings.AddPage`).
 - Fix: tooltip background was never anchored, so tooltips had no background.
+
+### Step 12 – Module API
+- Public API (global `Hush`, `apiVersion = 1`), documented in `API.md`:
+  - window: `Toggle`, `Open(key, focus)`, `ReplyLast`, `GetOpenConversation`, `ShowDialog`
+  - conversations: `GetConversation`, `Conversations`, `WhisperKey`, `MoveConversation`, `SetPinned`, `MarkRead`, `SendMessage`
+  - per-conversation module data: `GetModuleData`, `SetModuleData`, `NotifyChanged`
+  - categories and routing: `AddCategory` (safe before login), `GetCategories`, `AddRoutingRule`, `RemoveRoutingRules`
+  - header: `AddStatusChip` (the "Trial" chip), `AddHeaderButton`, `RefreshHeader`
+  - `AddChatMenuItems`, `AddSettingsPage` (with the page builder), `OpenSettings`
+  - events: `RegisterCallback` / `UnregisterCallback` for READY, CONV_*, MESSAGE_ADDED, UNREAD_CHANGED, CATEGORIES_CHANGED, SETTINGS_CHANGED, WINDOW_*, TAB_CHANGED, SEARCH_CHANGED
+  - `Hush.Theme` and `Hush.Widgets` so modules match the Hush style
+- Header renders module status chips and buttons.

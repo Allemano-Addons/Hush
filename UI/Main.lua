@@ -367,16 +367,93 @@ function Hush:Toggle()
     Main.Toggle()
 end
 
+-- ---------------------------------------------------------------------------
+-- Header extensions from modules: status chip and buttons.
+-- ---------------------------------------------------------------------------
+
+Main.chipProviders = {}   -- { fn(key, conv) -> text, r, g, b ; owner }
+Main.headerButtons = {}   -- { def = { id, text, tooltip, onClick, isShown }, owner, button }
+
+local function updateChip(header, key, conv)
+    local text, r, g, b
+    for _, p in ipairs(Main.chipProviders) do
+        local ok, t, cr, cg, cb = pcall(p.fn, key, conv)
+        if not ok then
+            geterrorhandler()(t)
+        elseif t and t ~= "" then
+            text, r, g, b = t, cr, cg, cb
+            break
+        end
+    end
+    if not header.chip then
+        local chip = CreateFrame("Frame", nil, header)
+        chip:SetHeight(18)
+        chip.bg = chip:CreateTexture(nil, "BACKGROUND")
+        chip.bg:SetAllPoints()
+        chip.border = W.Border(chip, "line")
+        chip.text = W.Text(chip, "heading", -2, "text")
+        chip.text:SetPoint("CENTER", 0, 0)
+        header.chip = chip
+    end
+    local chip = header.chip
+    if not text then chip:Hide() return end
+    if not r then r, g, b = Theme:Accent() end
+    chip.text:SetText(strupper(text))
+    chip.text:SetTextColor(r, g, b)
+    chip.bg:SetColorTexture(r, g, b, 0.15)
+    chip.border:SetColor(r, g, b, 0.8)
+    chip:SetWidth(chip.text:GetStringWidth() + 14)
+    chip:ClearAllPoints()
+    chip:SetPoint("LEFT", header.title, "RIGHT", 10, 0)
+    chip:Show()
+end
+
+local function updateHeaderButtons(header, key, conv)
+    local anchor = header.more or header.close
+    for _, hb in ipairs(Main.headerButtons) do
+        if not hb.button then
+            hb.button = W.Button(header, hb.def.text or "?", "default", function()
+                local k = Hush.List.selected
+                if k and Data.Get(k) then
+                    local ok, err = pcall(hb.def.onClick, k, Data.Get(k))
+                    if not ok then geterrorhandler()(err) end
+                end
+            end)
+            hb.button:SetHeight(24)
+            Theme:SetFont(hb.button.text, "semibold", -1)
+            hb.button:SetWidth(hb.button.text:GetStringWidth() + 20)
+            if hb.def.tooltip then
+                hb.button:HookScript("OnEnter", function(self) W.ShowTooltip(self, hb.def.tooltip) end)
+                hb.button:HookScript("OnLeave", function() W.HideTooltip() end)
+            end
+        end
+        local shown = conv ~= nil
+        if shown and hb.def.isShown then
+            local ok, res = pcall(hb.def.isShown, key, conv)
+            shown = ok and res and true or false
+        end
+        hb.button:ClearAllPoints()
+        if shown then
+            hb.button:SetPoint("RIGHT", anchor, "LEFT", -6, 0)
+            anchor = hb.button
+        end
+        hb.button:SetShown(shown)
+    end
+end
+
 -- Header: name in class color, then "Class · Level 60 · <Guild> · Zone".
 function Main.UpdateHeader(key)
     if not frame then return end
     local header = frame.header
     local conv = key and Data.Get(key)
+    updateHeaderButtons(header, key, conv)
     if not conv then
         header.title:SetText("")
         header.meta:SetText("")
+        if header.chip then header.chip:Hide() end
         return
     end
+    updateChip(header, key, conv)
     header.title:SetText(conv.display)
     header.title:SetTextColor(Hush.List.NameColor(conv))
 
@@ -428,6 +505,7 @@ Hush:RegisterCallback("UNREAD_CHANGED", function() Main.UpdateBadges() end, "Mai
 Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
     if key == "bgAlpha" then Main.ApplyBackgroundAlpha() end
     if key == "fadeWhenMoving" and frame then frame:SetAlpha(1) end
+    if (key == "accent" or key == "useClassColor") and Hush.List then Main.UpdateHeader(Hush.List.selected) end
 end, "Main")
 
 function Main.ResetPosition()
