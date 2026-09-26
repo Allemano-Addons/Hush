@@ -23,3 +23,13 @@
 - `UI/Main.lua`: 1000×620 window, movable (title row or header), resizable (bottom-right grip), position and size saved on whole pixels. Sidebar with HUSH title, new message + settings buttons, search field, Whispers/Groups/Requests tabs with accent underline and unread badges, "+ New category". Conversation pane with header, close button and empty state.
 - ESC closes the window (keyboard is never captured in combat).
 - `/hush reset` restores window position and size.
+
+### Step 4 – Chat list
+- `UI/List.lua`: virtualized chat list with pooled rows (only visible rows are drawn).
+- Whispers tab grouped by category (Pinned, Guild, Recruits, Other + custom), collapsible headers with chevron, chat count and unread badge when collapsed. Collapsed state is saved.
+- Groups and Requests tabs as flat lists, newest first.
+- Chat row: initial in a square, name and initial in class color, online dot (green/orange/grey), time (24 h, "Yesterday", weekday or day/month), preview, unread badge. Selected row with accent bar.
+- Search filters on name and message text; categories without matches are hidden and collapsed ones open while searching.
+- Thin scrollbar (mouse wheel, draggable thumb – OnUpdate only while dragging).
+- Selecting a chat marks it read and fills the header (name, class, level, guild, zone).
+- Test commands: `/hush fakemany [n]`, `/hush clearfake`.

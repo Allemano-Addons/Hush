@@ -197,6 +197,16 @@ local ICONS = {
         end
         return parts
     end,
+    chevronDown = function(f, s)
+        local q = s / 4
+        local a, b = line(f, -q * 1.5, q * 0.75, 0, -q * 0.75, 1.5), line(f, 0, -q * 0.75, q * 1.5, q * 0.75, 1.5)
+        if a then return { a, b } end
+    end,
+    chevronRight = function(f, s)
+        local q = s / 4
+        local a, b = line(f, -q * 0.75, q * 1.5, q * 0.75, 0, 1.5), line(f, q * 0.75, 0, -q * 0.75, -q * 1.5, 1.5)
+        if a then return { a, b } end
+    end,
     grip = function(f, s)
         local parts = {}
         for i = 1, 3 do
@@ -217,16 +227,21 @@ function W.Icon(frame, name, size, fallbackGlyph)
     box:SetPoint("CENTER")
     local parts = ICONS[name] and ICONS[name](box, size)
     if parts and #parts > 0 then
-        local icon = { parts = parts }
+        local icon = { parts = parts, box = box }
         function icon:SetColor(r, g, b, a)
             for _, p in ipairs(self.parts) do p:SetColorTexture(r, g, b, a or 1) end
         end
+        function icon:SetShown(shown) self.box:SetShown(shown) end
         return icon
     end
-    local fs = W.Text(frame, "semibold", 2)
+    local fs = W.Text(box, "semibold", 2)
     fs:SetPoint("CENTER")
     fs:SetText(fallbackGlyph or "?")
-    return { SetColor = function(_, r, g, b, a) fs:SetTextColor(r, g, b, a or 1) end }
+    return {
+        box = box,
+        SetColor = function(_, r, g, b, a) fs:SetTextColor(r, g, b, a or 1) end,
+        SetShown = function(self, shown) self.box:SetShown(shown) end,
+    }
 end
 
 -- ---------------------------------------------------------------------------

@@ -22,6 +22,7 @@ Theme.colors = {
     away      = { hex("E8A33D") },
     offline   = { hex("5A626B") },
     danger    = { hex("E0564F") },
+    bnet      = { hex("82C5FF") },
 }
 
 -- r, g, b for a named color.

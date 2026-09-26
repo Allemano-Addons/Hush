@@ -254,6 +254,8 @@ Hush:AddSlashCommand("fake", function(arg)
     name = name or "Testplayer"
     if not text or text == "" then text = "Hello from " .. name .. "! |cff1eff00|Hitem:2589::::::::1:::::::|h[Linen Cloth]|h|r" end
     onWhisper("CHAT_MSG_WHISPER", text, name, "", "", "", "", 0, 0, "", 0, 0, "")
+    local conv = Data.Get(Data.WhisperKey(Compat.NormalizeName(name)))
+    if conv then conv.fake = true end
     Hush:Print("Fake whisper from", name)
 end, "simulate an incoming whisper: /hush fake <name> <text>")
 
@@ -272,3 +274,37 @@ Hush:AddSlashCommand("filtertest", function()
     Hush.canDisplay = not Hush.canDisplay
     Hush:Print("Default-chat whisper hiding is now", Hush.canDisplay and "ACTIVE (until /reload)" or "inactive")
 end, "toggle whisper hiding in the default chat for testing")
+
+local FAKE_NAMES = { "Aldric", "Brynja", "Cedwyn", "Dagny", "Eirik", "Freja", "Gunnar", "Hilda", "Ivar", "Jorunn",
+    "Kettil", "Liv", "Magnus", "Nanna", "Orm", "Pernilla", "Ragnar", "Sigrid", "Torvald", "Ulla", "Vidar", "Ylva",
+    "Åsa", "Östen", "Ärling" }
+local FAKE_CLASSES = { "WARRIOR", "MAGE", "PRIEST", "ROGUE", "DRUID", "HUNTER", "WARLOCK", "PALADIN", "SHAMAN" }
+local FAKE_TEXTS = { "lf healer for SM?", "Hey, still recruiting?", "thanks for the invite!", "wanna trade?",
+    "Can you craft this for me?", "brb", "Where do I find the quest giver in Ironforge?", "gg" }
+
+Hush:AddSlashCommand("fakemany", function(arg)
+    local n = tonumber(arg) or 20
+    local cats = { "other", "other", "guild", "recruits" }
+    for i = 1, n do
+        local name = FAKE_NAMES[(i - 1) % #FAKE_NAMES + 1] .. (i > #FAKE_NAMES and tostring(i) or "")
+        local key = Data.WhisperKey(name)
+        local online = ({ true, false, nil })[i % 3 + 1]
+        local conv = Data.Ensure(key, { kind = "whisper", target = name, display = name, request = i % 7 == 0,
+            info = { class = FAKE_CLASSES[i % #FAKE_CLASSES + 1], level = 10 + i % 51, zone = "Elwynn Forest",
+                     online = online, status = (i % 5 == 0 and online) and "away" or nil } })
+        conv.fake = true
+        conv.category = cats[i % #cats + 1]
+        conv.pinned = i == 3
+        Data.AddMessage(key, { d = "in", m = FAKE_TEXTS[i % #FAKE_TEXTS + 1], s = name, t = time() - i * 3600 * 5 })
+        if i % 2 == 0 then Data.MarkRead(key) end
+    end
+    Hush:Print("Created", n, "fake conversations. Remove with /hush clearfake")
+end, "create test conversations: /hush fakemany [n]")
+
+Hush:AddSlashCommand("clearfake", function()
+    local n = 0
+    for key, conv in pairs(Data.All()) do
+        if conv.fake then Data.Delete(key) n = n + 1 end
+    end
+    Hush:Print("Removed", n, "fake conversations.")
+end, "remove test conversations")

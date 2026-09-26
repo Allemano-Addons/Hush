@@ -367,6 +367,42 @@ function Hush:Toggle()
     Main.Toggle()
 end
 
+-- Header: name in class color, then "Class · Level 60 · <Guild> · Zone".
+function Main.UpdateHeader(key)
+    if not frame then return end
+    local header = frame.header
+    local conv = key and Data.Get(key)
+    if not conv then
+        header.title:SetText("")
+        header.meta:SetText("")
+        return
+    end
+    header.title:SetText(conv.display)
+    header.title:SetTextColor(Hush.List.NameColor(conv))
+
+    local info, parts = conv.info or {}, {}
+    if conv.kind == "bnet" then
+        parts[#parts + 1] = conv.target
+        if info.character then parts[#parts + 1] = info.character end
+    end
+    local className = info.class and LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[info.class]
+    if className then parts[#parts + 1] = className end
+    if info.level and info.level > 0 then parts[#parts + 1] = "Level " .. info.level end
+    if info.guild then parts[#parts + 1] = "<" .. info.guild .. ">" end
+    if info.zone then parts[#parts + 1] = info.zone end
+    if conv.kind == "whisper" and #parts == 0 then parts[#parts + 1] = "No info yet" end
+    header.meta:SetText(table.concat(parts, "  ·  "))
+end
+
+Hush:RegisterCallback("CONV_OPENED", function(_, key) Main.UpdateHeader(key) end, "Main")
+Hush:RegisterCallback("CONV_UPDATED", function(_, conv)
+    local key = Hush.List.selected
+    if key and Data.Get(key) == conv then Main.UpdateHeader(key) end
+end, "Main")
+Hush:RegisterCallback("CONV_DELETED", function(_, key)
+    if Hush.List.selected == nil or Hush.List.selected == key then Main.UpdateHeader(nil) end
+end, "Main")
+
 Hush:RegisterCallback("UNREAD_CHANGED", function() Main.UpdateBadges() end, "Main")
 Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
     if key == "bgAlpha" then Main.ApplyBackgroundAlpha() end
