@@ -112,6 +112,12 @@ function API.SendMessage(key, text)
     return true
 end
 
+-- fn(key, conv) -> true to protect a conversation from the storage cleanup.
+function API.AddRetentionGuard(fn, owner)
+    assert(type(fn) == "function", "Hush.AddRetentionGuard: fn required")
+    data().AddRetentionGuard(fn, owner)
+end
+
 -- Split text into parts of at most 255 bytes at word boundaries (never inside links
 -- or multi-byte characters). Returns a list of strings.
 function API.SplitMessage(text)

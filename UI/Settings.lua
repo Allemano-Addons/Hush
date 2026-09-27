@@ -279,6 +279,48 @@ local function buildQuickReplies(p)
     end)
 end
 
+local function buildStorage(p)
+    p:Text("Everything Hush keeps is loaded at login, so less history means shorter loading screens. "
+        .. "The rules below run once per login. Saved messages are never removed.")
+    p:Segment("Messages per chat", "Oldest messages are dropped first.",
+        { { value = 50, label = "50" }, { value = 100, label = "100" }, { value = 200, label = "200" }, { value = 500, label = "500" } },
+        get("maxMessages"), set("maxMessages"))
+    p:Segment("Delete group chats after", "Party and raid chats with no messages for this long.",
+        { { value = 0, label = "Off" }, { value = 3, label = "3d" }, { value = 7, label = "7d" }, { value = 14, label = "14d" }, { value = 30, label = "30d" } },
+        get("groupRetentionDays"), set("groupRetentionDays"))
+    p:Segment("Delete inactive whispers after", "Never pinned chats, unread chats or active recruits.",
+        { { value = 0, label = "Off" }, { value = 30, label = "30d" }, { value = 60, label = "60d" }, { value = 90, label = "90d" }, { value = 180, label = "180d" } },
+        get("whisperRetentionDays"), set("whisperRetentionDays"))
+
+    p:Header("Usage")
+    p:Custom(20, function(c)
+        local fs = W.Text(c, "regular", 0, "textDim")
+        fs:SetPoint("TOPLEFT")
+        return function()
+            local chats, msgs, saved, bytes = Data.Stats()
+            local size = bytes >= 1048576 and ("%.1f MB"):format(bytes / 1048576) or ("%d KB"):format(ceil(bytes / 1024))
+            fs:SetText(("%d chats  ·  %d messages  ·  %d saved  ·  about %s on disk"):format(chats, msgs, saved, size))
+        end
+    end)
+    p:Button("Clean up now", "Apply the rules above right away.", "Clean up", "default", function()
+        local chats, trimmed = Data.Cleanup(true)
+        if chats == 0 and trimmed == 0 then
+            Hush:Print("Nothing to clean up.")
+            return
+        end
+        W.Dialog(frame, {
+            title = "Clean up",
+            text = ("Remove %d chat%s and %d old message%s?"):format(chats, chats == 1 and "" or "s", trimmed, trimmed == 1 and "" or "s"),
+            okText = "Clean up",
+            danger = true,
+            onOk = function()
+                Data.Cleanup()
+                p:Refresh()
+            end,
+        })
+    end)
+end
+
 -- ---------------------------------------------------------------------------
 -- Frame
 -- ---------------------------------------------------------------------------
@@ -477,6 +519,7 @@ Settings.AddPage({ id = "appearance", label = "Appearance", build = buildAppeara
 Settings.AddPage({ id = "behavior", label = "Behavior", build = buildBehavior })
 Settings.AddPage({ id = "notifications", label = "Notifications", build = buildNotifications })
 Settings.AddPage({ id = "quickreplies", label = "Quick replies", build = buildQuickReplies })
+Settings.AddPage({ id = "storage", label = "Storage", build = buildStorage })
 
 Hush:RegisterCallback("OPEN_SETTINGS", function() Settings.Toggle() end, "Settings")
 Hush:AddSlashCommand("settings", function(arg) Settings.Open(arg ~= "" and arg or nil) end, "open the settings")

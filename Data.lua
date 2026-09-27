@@ -5,7 +5,10 @@ local _, Hush = ...
 local Data = {}
 Hush.Data = Data
 
-local MAX_MESSAGES = 200
+-- Messages kept per conversation (Settings → Storage).
+local function maxMessages()
+    return (Hush.settings and Hush.settings.maxMessages) or 200
+end
 local PREVIEW_LEN = 80
 
 -- ---------------------------------------------------------------------------
@@ -147,7 +150,7 @@ function Data.AddMessage(key, msg)
     msg.t = msg.t or time()
     local msgs = conv.msgs
     msgs[#msgs + 1] = msg
-    while #msgs > MAX_MESSAGES do tremove(msgs, 1) end
+    while #msgs > maxMessages() do tremove(msgs, 1) end
     -- Keep the "New" marker on a message that still exists.
     if conv.firstUnread and conv.firstUnread < msgs[1].n then conv.firstUnread = msgs[1].n end
 
@@ -231,7 +234,7 @@ local function mergeInto(dst, src)
         if a.t == b.t then return (a.n or 0) < (b.n or 0) end
         return a.t < b.t
     end)
-    while #dst.msgs > MAX_MESSAGES do tremove(dst.msgs, 1) end
+    while #dst.msgs > maxMessages() do tremove(dst.msgs, 1) end
     for i, m in ipairs(dst.msgs) do m.n = i end
     dst.seq = #dst.msgs
     dst.unread = dst.unread + src.unread
@@ -292,6 +295,64 @@ function Data.MergeCaseDuplicates()
             for i = 2, #keys do Data.Rekey(keys[i], keep, Data.Get(keep).target) end
         end
     end
+end
+
+-- ---------------------------------------------------------------------------
+-- Storage: retention and cleanup (runs once at login, or from the settings)
+-- ---------------------------------------------------------------------------
+
+-- fn(key, conv) -> true keeps the conversation (e.g. active recruit candidates).
+local guards = {}
+function Data.AddRetentionGuard(fn, owner)
+    guards[#guards + 1] = { fn = fn, owner = owner }
+end
+
+local function guarded(key, conv)
+    for _, g in ipairs(guards) do
+        local ok, keep = pcall(g.fn, key, conv)
+        if not ok then geterrorhandler()(keep) elseif keep then return true end
+    end
+    return false
+end
+
+-- Applies the storage settings. With dryRun nothing changes; returns
+-- chatsRemoved, messagesTrimmed.
+function Data.Cleanup(dryRun)
+    local s = Hush.settings
+    local now, limit = time(), maxMessages()
+    local remove, trimmed = {}, 0
+    for key, conv in pairs(Data.All()) do
+        local days = conv.kind == "group" and s.groupRetentionDays or s.whisperRetentionDays
+        local old = days and days > 0 and (now - (conv.last or 0)) > days * 86400
+        local active = conv.kind == "group" and Hush.Groups and Hush.Groups.IsActive(conv)
+        if old and not conv.pinned and conv.unread == 0 and not active and not guarded(key, conv) then
+            remove[#remove + 1] = key
+        elseif #conv.msgs > limit then
+            trimmed = trimmed + (#conv.msgs - limit)
+            if not dryRun then
+                -- Drop the oldest in one pass.
+                local keep = {}
+                for i = #conv.msgs - limit + 1, #conv.msgs do keep[#keep + 1] = conv.msgs[i] end
+                conv.msgs = keep
+                if conv.firstUnread and conv.firstUnread < keep[1].n then conv.firstUnread = keep[1].n end
+            end
+        end
+    end
+    if not dryRun then
+        for _, key in ipairs(remove) do Data.Delete(key) end
+    end
+    return #remove, trimmed
+end
+
+-- Numbers for Settings → Storage. Size is an estimate of the saved file.
+function Data.Stats()
+    local chats, msgs = 0, 0
+    for _, conv in pairs(Data.All()) do
+        chats = chats + 1
+        msgs = msgs + #conv.msgs
+    end
+    local saved = Hush.Saved and Hush.Saved.Count() or 0
+    return chats, msgs, saved, (msgs + saved) * 270 + chats * 600
 end
 
 -- Deletes every conversation of this character. Categories and settings are kept.

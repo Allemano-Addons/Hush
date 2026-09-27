@@ -105,6 +105,9 @@ local DEFAULT_SETTINGS = {
     font = "auto",           -- "auto" or a font name (game font or LibSharedMedia)
     headingFont = "auto",
     listMode = "categories", -- Whispers tab: "categories" (grouped) or "recent" (newest first)
+    maxMessages = 200,         -- per conversation, oldest dropped first
+    groupRetentionDays = 14,   -- delete group chats older than this (0 = keep)
+    whisperRetentionDays = 0,  -- delete inactive whisper chats older than this (0 = keep)
     combatToast = true,
 }
 

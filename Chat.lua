@@ -359,4 +359,9 @@ end, "create a test conversation: /hush fakeconvo [name]")
 Hush:RegisterCallback("READY", function() Hush.canDisplay = true end, "Chat")
 
 -- Merge conversations that only differ in letter case (created before names were matched case-insensitively).
-Hush:RegisterCallback("READY", function() Data.MergeCaseDuplicates() end, "Chat")
+Hush:RegisterCallback("READY", function()
+    Data.MergeCaseDuplicates()
+    -- Storage rules run once per login (cheap: one pass over the conversations).
+    local removed = Data.Cleanup()
+    if removed > 0 then Hush:Print(("Removed %d old chat%s (Settings → Storage)."):format(removed, removed == 1 and "" or "s")) end
+end, "Chat")

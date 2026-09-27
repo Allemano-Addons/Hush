@@ -152,3 +152,7 @@
 
 ## 0.1.12 – 2026-09-27
 - Dialogs: `maxLetters` (default 40) and `allowEmpty` options, so notes can be longer and cleared.
+
+## 0.1.13 – 2026-09-27
+- Settings → Storage: messages per chat (50/100/200/500), delete group chats after N days (default 14), delete inactive whisper chats after N days (default off), usage stats and "Clean up now". Rules run once at login; pinned chats, unread chats, active groups and chats protected by modules are never removed.
+- Module API: `Hush.AddRetentionGuard(fn, owner)`.
