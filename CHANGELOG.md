@@ -139,3 +139,7 @@
 ## 0.1.8 – 2026-09-27
 - Fix: keys stopped working while Hush was open. The secure buttons for guild invites (0.1.6) were anchored to Hush frames, which made them protected and blocked Hush's keyboard handling. Secure buttons are now placed at their button's screen position instead of being anchored (hidden while a window is moved or resized, re-placed afterwards).
 - Hush no longer captures the keyboard at all: ESC closes the window and the settings through the game's own `UISpecialFrames`. This needs the window names `HushFrame` and `HushSettingsFrame` (the only new globals).
+
+## 0.1.9 – 2026-09-27
+- Fix: secure buttons for header actions (Recruit's Invite) were placed before the header had its new layout, so clicking did nothing. Placement now waits one frame; a pending placement is cancelled if the button hides or moves.
+- Unsent text is kept per conversation: switching chats saves the draft and restores it when you come back (for the session).

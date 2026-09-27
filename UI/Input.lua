@@ -232,7 +232,21 @@ Hush:RegisterCallback("WINDOW_BUILT", function()
     end)
 end, "Input")
 
-Hush:RegisterCallback("CONV_OPENED", function(_, _, conv)
+-- Unsent text is kept per conversation while switching (for this session).
+local drafts = {}
+local draftKey
+
+Hush:RegisterCallback("CONV_OPENED", function(_, key, conv)
+    if key ~= draftKey then
+        if draftKey then
+            local text = edit:GetText() or ""
+            drafts[draftKey] = text ~= "" and text or nil
+        end
+        draftKey = key
+        edit:SetText(drafts[key] or "")
+        drafts[key] = nil
+        updateCounter()
+    end
     footer:SetHeight(FOOTER_H)
     footer:Show()
     if conv.kind == "group" then
@@ -245,12 +259,18 @@ Hush:RegisterCallback("CONV_OPENED", function(_, _, conv)
     layoutQuick()
 end, "Input")
 
+Hush:RegisterCallback("CONV_RENAMED", function(_, oldKey, newKey)
+    if draftKey == oldKey then draftKey = newKey end
+    if drafts[oldKey] then drafts[newKey], drafts[oldKey] = drafts[oldKey], nil end
+end, "Input")
+
 -- Conversation.lua closes the view first when the open conversation is deleted.
 Hush:RegisterCallback("CONV_DELETED", function()
     if footer and Hush.Conversation.Current() == nil then
         footer:Hide()
         footer:SetHeight(1)
         edit:SetText("")
+        draftKey = nil
     end
 end, "Input")
 

@@ -553,19 +553,28 @@ function W.SecureMacroOverlay(target, postClick)
     o:SetScript("OnEnter", function() local f = target:GetScript("OnEnter") if f then f(target) end end)
     o:SetScript("OnLeave", function() local f = target:GetScript("OnLeave") if f then f(target) end end)
     if postClick then o:SetScript("PostClick", postClick) end
-    target:HookScript("OnHide", function() if not InCombatLockdown() then o:Hide() end end)
+    target:HookScript("OnHide", function() o:Disarm() end)
 
     -- Returns false in combat (secure attributes can't change then).
+    -- Placement waits one frame: a button that was just re-anchored reports its new
+    -- screen position only after the next layout pass.
     function o:Arm(macrotext)
         if InCombatLockdown() then return false end
-        if not target:IsVisible() or not placeOver(self, target) then self:Hide() return false end
-        self:SetFrameStrata(target:GetFrameStrata())
-        self:SetFrameLevel(target:GetFrameLevel() + 1) -- just above its button, not above other windows
-        self:SetAttribute("macrotext", macrotext)
-        self:Show()
+        self:Hide()
+        self.token = (self.token or 0) + 1
+        local token = self.token
+        Compat.After(0, function()
+            if token ~= self.token or InCombatLockdown() then return end
+            if not target:IsVisible() or not placeOver(self, target) then return end
+            self:SetFrameStrata(target:GetFrameStrata())
+            self:SetFrameLevel(target:GetFrameLevel() + 1) -- just above its button, not above other windows
+            self:SetAttribute("macrotext", macrotext)
+            self:Show()
+        end)
         return true
     end
     function o:Disarm()
+        self.token = (self.token or 0) + 1 -- cancel a pending arm
         if not InCombatLockdown() then self:Hide() end
     end
     overlays[#overlays + 1] = o
@@ -576,7 +585,7 @@ end
 -- button is left at the old position).
 function W.HideSecureOverlays()
     if InCombatLockdown() then return end
-    for _, o in ipairs(overlays) do o:Hide() end
+    for _, o in ipairs(overlays) do o:Disarm() end
 end
 
 -- Entering combat: hide all overlays while that is still allowed.
