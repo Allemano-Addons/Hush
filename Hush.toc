@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Hush
 ## Notes: Modern whisper messenger for WoW Forever
-## Version: 0.1.25
+## Version: 0.1.26
 ## SavedVariables: HushDB
 ## IconTexture: Interface\AddOns\Hush\Media\logo
 

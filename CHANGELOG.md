@@ -214,3 +214,6 @@
 Found with `/hush report`:
 - Fix: registering the old Classic event `PARTY_MEMBERS_CHANGED` errors on WoW Forever, which stopped the rest of the group setup at login (the group session check did not run). Events the client does not know are now skipped.
 - Fix: a font change at login (e.g. a LibSharedMedia font) tried to refresh the conversation view before the window existed.
+
+## 0.1.26 – 2026-09-27
+- `/hush report clear` empties the recorded error list.

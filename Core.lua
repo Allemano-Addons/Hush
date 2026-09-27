@@ -405,7 +405,14 @@ function Hush.OpenReport()
     Hush.Widgets.CopyBox("Hush report", Hush.BuildReport())
 end
 
-Hush:AddSlashCommand("report", function() Hush.OpenReport() end, "copy diagnostics for a bug report")
+Hush:AddSlashCommand("report", function(arg)
+    if strlower(arg or "") == "clear" then
+        wipe(Hush.errors)
+        Hush:Print("Error list cleared.")
+        return
+    end
+    Hush.OpenReport()
+end, "copy diagnostics for a bug report (/hush report clear empties the error list)")
 
 -- Dev: an intentional error on the next message, to check the safety net and the report.
 Hush:AddSlashCommand("testerror", function()
