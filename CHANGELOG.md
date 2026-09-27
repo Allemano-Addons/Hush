@@ -146,3 +146,6 @@
 
 ## 0.1.10 – 2026-09-27
 - Removed secure `macro` support for header buttons: it did not work reliably. Protected actions such as guild invites stay in the chat right-click menu (where they work).
+
+## 0.1.11 – 2026-09-27
+- Header layout: the info line reads naturally – "Level 10 Priest · <Guild> · Zone" with the class name in its class color. Module info (e.g. a recruit note) gets its own line with a thin accent bar; the header only grows when there is one, and long notes are cut with "...".

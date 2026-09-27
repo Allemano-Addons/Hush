@@ -265,6 +265,16 @@ local function buildPane()
     header.meta = W.Text(header, "regular", -1, "textDim")
     header.meta:SetPoint("TOPLEFT", header.title, "BOTTOMLEFT", 0, -6)
 
+    -- Optional third line from modules (e.g. a recruit note), with a thin accent bar.
+    header.extraBar = header:CreateTexture(nil, "ARTWORK")
+    header.extraBar:SetPoint("TOPLEFT", header.meta, "BOTTOMLEFT", 0, -7)
+    header.extraBar:SetSize(2, 13)
+    W.OnAccent(function(r, g, b) header.extraBar:SetColorTexture(r, g, b, 0.8) end)
+    header.extraBar:Hide()
+    header.extra = W.Text(header, "regular", -1, "text")
+    header.extra:SetPoint("LEFT", header.extraBar, "RIGHT", 8, 0)
+    header.extra:Hide()
+
     -- Footer (input area, built in a later step)
     local footer = CreateFrame("Frame", nil, pane)
     footer:SetPoint("BOTTOMLEFT")
@@ -448,7 +458,40 @@ local function updateHeaderButtons(header, key, conv)
     end
 end
 
--- Header: name in class color, then "Class · Level 60 · <Guild> · Zone".
+local function hexColor(r, g, b)
+    return ("|cff%02x%02x%02x"):format(floor(r * 255 + 0.5), floor(g * 255 + 0.5), floor(b * 255 + 0.5))
+end
+
+-- Info line, read as a sentence: "Level 10 Priest  ·  <Slakthuset>  ·  Durotar".
+local function infoLine(conv)
+    local info, parts = conv.info or {}, {}
+    if conv.kind == "group" then
+        if Hush.Groups.IsActive(conv) then
+            parts[#parts + 1] = "Active  ·  " .. Hush.Groups.MemberCount() .. " members"
+        else
+            parts[#parts + 1] = "Ended" .. (conv.ended and (" " .. date("%d/%m %H:%M", conv.ended)) or "")
+        end
+        return table.concat(parts, "  ·  ")
+    end
+    if conv.kind == "bnet" then
+        parts[#parts + 1] = conv.target .. (info.character and ("  ·  " .. info.character) or "")
+    end
+    -- "Level 10 Priest" with the class name in its class color.
+    local className = info.class and LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[info.class]
+    local who = {}
+    if info.level and info.level > 0 then who[#who + 1] = "Level " .. info.level end
+    if className then
+        local r, g, b = Hush.Compat.ClassColor(info.class)
+        who[#who + 1] = r and (hexColor(r, g, b) .. className .. "|r") or className
+    end
+    if #who > 0 then parts[#parts + 1] = table.concat(who, " ") end
+    if info.guild then parts[#parts + 1] = "<" .. info.guild .. ">" end
+    if info.zone then parts[#parts + 1] = info.zone end
+    if conv.kind == "whisper" and #parts == 0 then parts[#parts + 1] = "No info yet" end
+    return table.concat(parts, "  ·  ")
+end
+
+-- Header: name + chip, the info line, and an optional extra line from modules (e.g. a note).
 function Main.UpdateHeader(key)
     if not frame then return end
     local header = frame.header
@@ -457,42 +500,33 @@ function Main.UpdateHeader(key)
     if not conv then
         header.title:SetText("")
         header.meta:SetText("")
+        header.extra:Hide()
+        header.extraBar:Hide()
+        header:SetHeight(S.headerH)
         if header.chip then header.chip:Hide() end
         return
     end
     updateChip(header, key, conv)
     header.title:SetText(conv.display)
     header.title:SetTextColor(Hush.List.NameColor(conv))
+    header.meta:SetText(infoLine(conv))
 
-    local info, parts = conv.info or {}, {}
-    if conv.kind == "bnet" then
-        parts[#parts + 1] = conv.target
-        if info.character then parts[#parts + 1] = info.character end
-    end
-    local className = info.class and LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[info.class]
-    if className then parts[#parts + 1] = className end
-    if info.level and info.level > 0 then parts[#parts + 1] = "Level " .. info.level end
-    if info.guild then parts[#parts + 1] = "<" .. info.guild .. ">" end
-    if info.zone then parts[#parts + 1] = info.zone end
-    if conv.kind == "whisper" and #parts == 0 then parts[#parts + 1] = "No info yet" end
-    if conv.kind == "group" then
-        if Hush.Groups.IsActive(conv) then
-            parts[#parts + 1] = "Active"
-            parts[#parts + 1] = Hush.Groups.MemberCount() .. " members"
-        else
-            parts[#parts + 1] = "Ended" .. (conv.ended and (" " .. date("%d/%m %H:%M", conv.ended)) or "")
-        end
-    end
-    -- Extra info from modules (e.g. a recruit note).
+    -- Extra line from modules, shown like a quote under the info line.
+    local extras = {}
     for _, p in ipairs(Main.infoProviders) do
         local ok, extra = pcall(p.fn, key, conv)
         if not ok then
             geterrorhandler()(extra)
         elseif extra and extra ~= "" then
-            parts[#parts + 1] = extra
+            extras[#extras + 1] = extra
         end
     end
-    header.meta:SetText(table.concat(parts, "  ·  "))
+    local hasExtra = #extras > 0
+    header.extra:SetWidth(max(100, header:GetWidth() - S.padding * 2 - 20)) -- long notes are cut with "..."
+    header.extra:SetText(table.concat(extras, "  ·  "))
+    header.extra:SetShown(hasExtra)
+    header.extraBar:SetShown(hasExtra)
+    header:SetHeight(hasExtra and (S.headerH + 20) or S.headerH)
 end
 
 -- Auto-open: incoming (or sent) whisper opens Hush on that conversation when the window is
