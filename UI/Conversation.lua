@@ -371,6 +371,7 @@ function Conv.SetOffset(value)
 end
 
 local function atBottom()
+    if not body then return true end -- window not built yet
     return offset >= maxOffset() - 4
 end
 

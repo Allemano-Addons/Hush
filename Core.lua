@@ -34,14 +34,17 @@ end
 local eventFrame = CreateFrame("Frame")
 local eventHandlers = {}
 
+-- Returns false if the client does not know the event (WoW Forever lacks some older
+-- Classic events); such handlers are simply skipped.
 function Hush:RegisterEvent(event, handler)
     local list = eventHandlers[event]
     if not list then
+        if not pcall(eventFrame.RegisterEvent, eventFrame, event) then return false end
         list = {}
         eventHandlers[event] = list
-        eventFrame:RegisterEvent(event)
     end
     list[#list + 1] = handler
+    return true
 end
 
 function Hush:UnregisterEvent(event, handler)

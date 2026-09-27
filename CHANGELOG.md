@@ -209,3 +209,8 @@
 - **`/hush report`** (also Settings > General > Report a problem): a window with version, client, locale, screen, theme and key settings, data counts, client features, loaded addons and recent Hush errors, pre-selected for Ctrl+C.
 - Addon list icon: own Hush logo (`Media/logo.tga`).
 - Dev: `/hush testerror`.
+
+## 0.1.25 – 2026-09-27
+Found with `/hush report`:
+- Fix: registering the old Classic event `PARTY_MEMBERS_CHANGED` errors on WoW Forever, which stopped the rest of the group setup at login (the group session check did not run). Events the client does not know are now skipped.
+- Fix: a font change at login (e.g. a LibSharedMedia font) tried to refresh the conversation view before the window existed.
