@@ -268,7 +268,7 @@ local function buildThemes(p)
                     title = "Reload UI",
                     text = "\"" .. t.name .. "\" is applied after a UI reload. Reload now?",
                     okText = "Reload",
-                    onOk = function() ReloadUI() end,
+                    macro = "/reload", -- ReloadUI() is blocked for addons on WoW Forever
                 })
             end)
             card.theme = t

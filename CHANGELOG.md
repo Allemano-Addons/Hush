@@ -188,3 +188,6 @@
 ## 0.1.19 – 2026-09-27
 - **Themes** (Settings → Themes): Hush Original (default, unchanged), Midnight, Graphite, Horde and Alliance. A theme swaps the base palette and suggests an accent color; it is applied once at load, so switching asks for a UI reload and costs nothing while playing. Cards show a palette preview and which theme is active.
 - `/hush texturetest` (temporary): checks that the classic Blizzard textures exist on this client, for the upcoming "Blizzard Style" theme.
+
+## 0.1.20 – 2026-09-27
+- Fix: "Reload" in the theme dialog did nothing (`ReloadUI()` is blocked for addons on WoW Forever). It now runs `/reload` through a secure button. Dialogs accept a `macro` option for this.

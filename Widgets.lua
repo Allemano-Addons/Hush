@@ -769,7 +769,8 @@ end
 -- ---------------------------------------------------------------------------
 -- Dialog inside a parent frame: confirm or text prompt.
 -- opts: { title, text, input = default text or nil, okText, danger, onOk(value),
---         maxLetters (default 40), allowEmpty (input may be saved empty) }
+--         maxLetters (default 40), allowEmpty (input may be saved empty),
+--         macro (slash command run by the OK button through a secure button, e.g. "/reload") }
 -- ---------------------------------------------------------------------------
 
 local dialogs = {}
@@ -847,6 +848,15 @@ function W.Dialog(parent, opts)
         d.box:SetHeight(16 + 20 + textH + 16 + 28 + 14)
     end
     d:Show()
+    -- Protected actions (e.g. /reload): the OK button runs a slash command securely.
+    for s, b in pairs(d.okButtons) do
+        if s == style and opts.macro then
+            b.secure = b.secure or W.SecureMacroOverlay(b, function() d:Hide() end)
+            b.secure:Arm(opts.macro)
+        elseif b.secure then
+            b.secure:Disarm()
+        end
+    end
     if opts.input then
         d.edit:SetFocus()
         d.edit:HighlightText()
