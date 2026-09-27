@@ -368,6 +368,25 @@ local function buildStorage(p)
                     })
                 end)
                 row.forget:SetPoint("RIGHT")
+                -- The shared bucket from before 0.1.18: move it into the character you play.
+                if info.char.legacy then
+                    row.merge = W.Button(row, "Merge here", "accent", function()
+                        W.Dialog(frame, {
+                            title = "Merge older data",
+                            text = "Move these chats, categories and saved messages into "
+                                .. Hush.Compat.PlayerName() .. "? Do this on the character they belong to.",
+                            okText = "Merge",
+                            onOk = function()
+                                Data.MergeCharacter(info.key)
+                                row:Hide()
+                                p:Refresh()
+                                Hush:Print("Older data merged into " .. Hush.Compat.PlayerName() .. ".")
+                            end,
+                        })
+                    end)
+                    row.merge:SetHeight(24)
+                    row.merge:SetPoint("RIGHT", row.forget, "LEFT", -6, 0)
+                end
                 row.forget.text:SetTextColor(Theme:Color("danger"))
                 row.forget:SetScript("OnLeave", function(self) self.text:SetTextColor(Theme:Color("danger")) end)
                 row.info = info

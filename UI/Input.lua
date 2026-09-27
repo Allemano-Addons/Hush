@@ -293,7 +293,7 @@ Hush:RegisterCallback("CONV_OPENED", function(_, key, conv)
         local canReply = conv.kind == "whisper" or conv.kind == "bnet"
         readOnly.key = key
         readOnly.text:SetText(Hush.Main.CharLabel(charKey) .. "'s chat is read-only.")
-        readOnly.button.text:SetText("Reply as " .. (UnitName("player") or "me"))
+        readOnly.button.text:SetText("Reply as " .. Hush.Compat.PlayerName())
         readOnly.button:SetWidth(readOnly.button.text:GetStringWidth() + 28)
         readOnly.button:SetShown(canReply)
         setReadOnly(true)

@@ -294,7 +294,7 @@ local function mergeInto(dst, src)
     dst.unread = dst.unread + src.unread
     dst.firstUnread = dst.unread > 0 and dst.msgs[max(1, #dst.msgs - dst.unread + 1)].n or nil
     if src.last > dst.last then dst.last, dst.preview = src.last, src.preview end
-    dst.created = min(dst.created or src.created, src.created or dst.created)
+    if dst.created or src.created then dst.created = min(dst.created or src.created, src.created or dst.created) end
     dst.pinned = dst.pinned or src.pinned
     dst.request = dst.request and src.request
     if dst.category == "other" and src.category ~= "other" then dst.category = src.category end
@@ -418,6 +418,42 @@ function Data.Stats()
         for _, src in pairs(char.saved or {}) do saved = saved + #src.msgs end
     end
     return chats, msgs, saved, (msgs + saved) * 270 + chats * 600
+end
+
+-- Move another character's data into the character you are playing (used for the
+-- "older data" bucket from before surnames were part of the character key).
+function Data.MergeCharacter(fromKey)
+    local src = Hush.db.chars[fromKey]
+    if not src or fromKey == Hush.charKey then return false end
+    local dst = Hush.char
+    for key, conv in pairs(src.convs or {}) do
+        if dst.convs[key] then mergeInto(dst.convs[key], conv) else dst.convs[key] = conv end
+    end
+    for key, s in pairs(src.saved or {}) do
+        local mine = dst.saved[key]
+        if mine then
+            for _, m in ipairs(s.msgs) do mine.msgs[#mine.msgs + 1] = m end
+            sort(mine.msgs, function(a, b) return a.t < b.t end)
+        else
+            dst.saved[key] = s
+        end
+    end
+    local cats = src.categories
+    if cats then
+        for _, id in ipairs(cats.order or {}) do
+            if not dst.categories.byId[id] and cats.byId[id] then
+                dst.categories.byId[id] = cats.byId[id]
+                tinsert(dst.categories.order, id)
+            end
+        end
+    end
+    if src.group and not dst.group then dst.group = src.group end
+    dst.lastWhisper = dst.lastWhisper or src.lastWhisper
+    Hush.db.chars[fromKey] = nil
+    Hush:Fire("CHARACTERS_CHANGED")
+    Hush:Fire("CATEGORIES_CHANGED")
+    Hush:Fire("UNREAD_CHANGED")
+    return true
 end
 
 -- Remove another character's Hush data (not the one you are playing).

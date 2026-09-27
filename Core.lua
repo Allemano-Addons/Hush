@@ -188,11 +188,18 @@ local function initCharDB()
     char.convs = char.convs or {}
     char.saved = char.saved or {} -- saved messages, see Saved.lua
     -- Who this is, for the character selector (alts).
-    char.name = UnitName("player")
+    char.name = Hush.Compat.PlayerName()
     char.realm = Hush.Compat.PlayerRealm()
     char.class = select(2, UnitClass("player"))
     char.lastLogin = time()
     Hush.charKey = key
+    -- Before 0.1.18 characters were stored by first name only, so characters sharing a
+    -- first name shared one bucket. That bucket stays readable as "older data" until it is
+    -- merged into the right character (Settings → Storage).
+    local legacyKey = Hush.Compat.LegacyPlayerKey()
+    if legacyKey ~= key and Hush.db.chars[legacyKey] then
+        Hush.db.chars[legacyKey].legacy = true
+    end
 
     local cats = char.categories
     if not cats then

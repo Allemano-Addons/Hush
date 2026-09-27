@@ -43,8 +43,28 @@ function Compat.PlayerRealm()
     return realm
 end
 
--- Key for per-character storage.
+-- Your full character name. On WoW Forever UnitName returns the first name and the
+-- SURNAME separately, and first names are not unique ("Allemano Moo" and "Allemano Mu"
+-- are different characters), so the surname is part of the name. Chat events use the
+-- same "First Last" form.
+function Compat.PlayerName()
+    local name, second = UnitName("player")
+    name = name or "Unknown"
+    if type(second) == "string" and second ~= "" then
+        local sep = Constants and Constants.CharacterNameSeparatorConsts
+            and Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR or " "
+        return name .. sep .. second
+    end
+    return name
+end
+
+-- Key for per-character storage: full name + realm.
 function Compat.PlayerKey()
+    return Compat.PlayerName() .. "-" .. Compat.PlayerRealm()
+end
+
+-- The key Hush used before 0.1.18 (first name only), for the "older data" bucket.
+function Compat.LegacyPlayerKey()
     return (UnitName("player") or "Unknown") .. "-" .. Compat.PlayerRealm()
 end
 

@@ -94,7 +94,7 @@ local function onGroupMessage(event, text, sender, _, _, _, _, _, _, _, _, _, gu
     local key = sessionConv()
     if not key then return end
     local name = Compat.NormalizeName(sender) or sender
-    local me = UnitName("player")
+    local me = Compat.PlayerName()
     Data.AddMessage(key, {
         d = (name == me) and "out" or "in",
         m = text,
@@ -131,11 +131,11 @@ Hush:AddSlashCommand("fakegroup", function()
         { "Ragnar", "WARRIOR", "leader", "ok everyone, pull after buffs" },
         { "Sigrid", "PRIEST", nil, "oom, 10 sec" },
         { "Ivar", "MAGE", nil, "want water? |cffffffff|Hitem:8079::::::::60:::::::|h[Conjured Crystal Water]|h|r" },
-        { UnitName("player"), Compat.PlayerClass(), nil, "ready!" },
+        { Compat.PlayerName(), Compat.PlayerClass(), nil, "ready!" },
         { "Ragnar", "WARRIOR", "warning", "DON'T PULL THE PATROL" },
     }
     for i, l in ipairs(lines) do
-        Data.AddMessage(key, { d = l[1] == UnitName("player") and "out" or "in", m = l[4], s = l[1], c = l[2], k = l[3],
+        Data.AddMessage(key, { d = l[1] == Compat.PlayerName() and "out" or "in", m = l[4], s = l[1], c = l[2], k = l[3],
                                t = started + i * 120 })
     end
     Hush:Print("Created a test group chat (ended). Open the Groups tab.")

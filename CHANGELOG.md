@@ -178,3 +178,9 @@
 - **All characters** lists every chat from all characters, newest first, with a small character tag, and search covers them all – the Saved tab too.
 - Storage cleanup now runs over all characters at login, and the usage numbers cover all of them. Settings → Storage → Other characters shows each alt's chats, messages and last login, with **Forget** (deletes that character's Hush history).
 - Events `VIEW_CHANGED`, `CHARACTERS_CHANGED`.
+
+## 0.1.18 – 2026-09-27
+- Fix: characters sharing a first name (e.g. "Allemano Moo" and "Allemano Mu" – WoW Forever has surnames and first names are not unique) shared one storage bucket, so an alt showed the main's chats and the character selector never appeared. Characters are now stored by full name (first name + surname) and realm.
+- The old shared bucket is not deleted or guessed: it shows as "<name> (older data)" in the selector (read-only), and Settings → Storage → Other characters has **Merge here** to move it into the character you are playing (chats, categories, saved messages, recruit data). A reminder is printed at login until it is merged or forgotten.
+- Your own name uses the full name everywhere: your party/raid messages count as yours again, and "Reply as" shows the full name.
+- Fix: merging conversations no longer errors when neither has a creation time.

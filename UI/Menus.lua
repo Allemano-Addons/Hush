@@ -25,7 +25,7 @@ function Menus.ChatItems(key)
     -- Other characters: read-only, only "Reply as <you>".
     if Data.IsForeign(key) then
         if conv.kind == "whisper" or conv.kind == "bnet" then
-            return { { text = "Reply as " .. (UnitName("player") or "me"), onClick = function() Hush.Input.ReplyAs(key) end } }
+            return { { text = "Reply as " .. Hush.Compat.PlayerName(), onClick = function() Hush.Input.ReplyAs(key) end } }
         end
         return {}
     end

@@ -71,7 +71,7 @@ local function senderOf(conv, m)
     if m.d == "out" then
         local r, g, b = Compat.ClassColor(Compat.PlayerClass())
         if not r then r, g, b = Theme:Color("text") end
-        return UnitName("player"), r, g, b
+        return Compat.PlayerName(), r, g, b
     end
     local name = m.s or conv.display
     local r, g, b = Compat.ClassColor(m.c)

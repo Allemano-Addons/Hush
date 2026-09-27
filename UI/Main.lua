@@ -389,6 +389,7 @@ function Main.CharLabel(charKey, char)
     local name = char and char.name or (charKey:match("^[^%-]+") or charKey)
     local realm = char and char.realm
     local label = colored(char, name)
+    if char and char.legacy then label = label .. " |cff7c858f(older data)|r" end
     if realm and realm ~= Hush.Compat.PlayerRealm() then label = label .. " |cff7c858f- " .. realm .. "|r" end
     return label
 end

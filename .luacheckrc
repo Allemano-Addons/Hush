@@ -42,6 +42,6 @@ read_globals = {
     "LibStub", "ERR_CHAT_PLAYER_NOT_FOUND_S", "ERR_FRIEND_ONLINE_SS", "ERR_FRIEND_OFFLINE_S",
     "SendChatMessage", "BNSendWhisper", "BNGetNumFriends", "BNGetFriendInfo",
     "ChatFrameUtil", "ChatEdit_SetLastTellTarget", "hooksecurefunc", "IsShiftKeyDown",
-    "MouseIsOver", "MouseIsOver", "IsMouseButtonDown", "InviteUnit", "GuildInvite", "CanGuildInvite", "C_PartyInfo",
+    "Constants", "MouseIsOver", "MouseIsOver", "IsMouseButtonDown", "InviteUnit", "GuildInvite", "CanGuildInvite", "C_PartyInfo",
     "IsInRaid", "IsInGroup", "GetNumRaidMembers", "GetNumPartyMembers", "GetNumGroupMembers",
 }
