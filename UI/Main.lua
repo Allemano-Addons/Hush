@@ -38,11 +38,15 @@ end
 local function makeDraggable(region)
     region:EnableMouse(true)
     region:RegisterForDrag("LeftButton")
-    region:SetScript("OnDragStart", function() frame:StartMoving() end)
+    region:SetScript("OnDragStart", function()
+        W.HideSecureOverlays() -- no invisible button may stay at the old position
+        frame:StartMoving()
+    end)
     region:SetScript("OnDragStop", function()
         frame:StopMovingOrSizing()
         savePosition()
         restorePosition() -- re-anchor TOPLEFT on whole pixels
+        Main.UpdateHeader(Hush.List.selected) -- re-place secure header buttons
     end)
 end
 
@@ -293,36 +297,22 @@ local function buildGrip()
     grip.icon:SetColor(Theme:Color("textFaint"))
     grip:SetScript("OnEnter", function(self) self.icon:SetColor(Theme:Color("text")) end)
     grip:SetScript("OnLeave", function(self) self.icon:SetColor(Theme:Color("textFaint")) end)
-    grip:SetScript("OnMouseDown", function() frame:StartSizing("BOTTOMRIGHT") end)
+    grip:SetScript("OnMouseDown", function()
+        W.HideSecureOverlays()
+        frame:StartSizing("BOTTOMRIGHT")
+    end)
     grip:SetScript("OnMouseUp", function()
         frame:StopMovingOrSizing()
         savePosition()
         restorePosition()
+        Main.UpdateHeader(Hush.List.selected)
     end)
-end
-
--- ESC closes the window without a global name (UISpecialFrames would need one).
--- Keyboard input is only enabled while shown and out of combat, and always passes
--- through except for ESC, so it can never swallow keys during a fight.
-local function enableKeyboard(on)
-    if on and InCombatLockdown() then on = false end
-    frame:EnableKeyboard(on)
-    if on then frame:SetPropagateKeyboardInput(true) end
-end
-
-local function setupEscape()
-    frame:SetScript("OnKeyDown", function(self, key)
-        if key == "ESCAPE" and not InCombatLockdown() then
-            self:SetPropagateKeyboardInput(false)
-            Main.Hide()
-        end
-    end)
-    Hush:RegisterEvent("PLAYER_REGEN_DISABLED", function() frame:EnableKeyboard(false) end)
-    Hush:RegisterEvent("PLAYER_REGEN_ENABLED", function() if frame:IsShown() then enableKeyboard(true) end end)
 end
 
 local function build()
-    frame = CreateFrame("Frame", nil, UIParent)
+    -- Named only so ESC can close it through UISpecialFrames. Hush never captures the keyboard.
+    frame = CreateFrame("Frame", "HushFrame", UIParent)
+    tinsert(UISpecialFrames, "HushFrame")
     frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
@@ -342,18 +332,13 @@ local function build()
     -- Border above children.
     for _, side in ipairs({ "top", "bottom", "left", "right" }) do frame.border[side]:SetDrawLayer("OVERLAY", 7) end
 
-    setupEscape()
     restorePosition()
     Main.ApplyBackgroundAlpha()
     updateTabs()
     Main.UpdateBadges()
 
-    frame:SetScript("OnShow", function()
-        enableKeyboard(true)
-        Hush:Fire("WINDOW_SHOWN")
-    end)
+    frame:SetScript("OnShow", function() Hush:Fire("WINDOW_SHOWN") end)
     frame:SetScript("OnHide", function()
-        frame:EnableKeyboard(false)
         W.HideTooltip()
         Hush:Fire("WINDOW_HIDDEN")
     end)

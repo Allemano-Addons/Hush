@@ -12,10 +12,13 @@ globals = {
     "BINDING_HEADER_HUSH",
     "BINDING_NAME_HUSH_TOGGLE",
     "BINDING_NAME_HUSH_REPLY",
+    -- Window names, only so ESC closes them via UISpecialFrames.
+    "HushFrame", "HushSettingsFrame",
 }
 
 -- WoW API used by Hush (read-only). Extend as new APIs are used.
 read_globals = {
+    "UISpecialFrames",
     -- Lua extensions in WoW
     "strjoin", "strsplit", "strtrim", "strlower", "strupper", "strlen", "strsub", "strfind",
     "tostringall", "tinsert", "tremove", "wipe", "sort", "floor", "ceil", "min", "max", "abs",

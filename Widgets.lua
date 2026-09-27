@@ -528,13 +528,26 @@ end
 -- guild invites, which addon code may not call directly. Only armed out of combat.
 -- ---------------------------------------------------------------------------
 
+-- IMPORTANT: the overlay is never anchored to Hush frames. Anchoring a secure frame to a
+-- frame makes that frame "protected", which blocked keyboard handling and showing/hiding
+-- Hush in combat. Instead it is placed at the target's screen position when armed.
+
 local overlays = {}
+
+local function placeOver(o, target)
+    local left, bottom = target:GetLeft(), target:GetBottom()
+    if not left or not bottom then return false end
+    local ratio = target:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    o:ClearAllPoints()
+    o:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", left * ratio, bottom * ratio)
+    o:SetSize(target:GetWidth() * ratio, target:GetHeight() * ratio)
+    return true
+end
 
 function W.SecureMacroOverlay(target, postClick)
     local o = CreateFrame("Button", nil, UIParent, "SecureActionButtonTemplate")
     o:RegisterForClicks("AnyUp", "AnyDown") -- the template acts once, per the key-down setting
     o:SetAttribute("type", "macro")
-    o:SetAllPoints(target)
     o:Hide()
     -- Keep the Hush button's hover look.
     o:SetScript("OnEnter", function() local f = target:GetScript("OnEnter") if f then f(target) end end)
@@ -545,8 +558,9 @@ function W.SecureMacroOverlay(target, postClick)
     -- Returns false in combat (secure attributes can't change then).
     function o:Arm(macrotext)
         if InCombatLockdown() then return false end
+        if not target:IsVisible() or not placeOver(self, target) then self:Hide() return false end
         self:SetFrameStrata(target:GetFrameStrata())
-        self:SetFrameLevel(target:GetFrameLevel() + 10)
+        self:SetFrameLevel(target:GetFrameLevel() + 1) -- just above its button, not above other windows
         self:SetAttribute("macrotext", macrotext)
         self:Show()
         return true
@@ -556,6 +570,13 @@ function W.SecureMacroOverlay(target, postClick)
     end
     overlays[#overlays + 1] = o
     return o
+end
+
+-- Hide every overlay (entering combat, or while a window is being moved so no invisible
+-- button is left at the old position).
+function W.HideSecureOverlays()
+    if InCombatLockdown() then return end
+    for _, o in ipairs(overlays) do o:Hide() end
 end
 
 -- Entering combat: hide all overlays while that is still allowed.
@@ -650,6 +671,7 @@ end
 showMenu = function(level, items, anchor)
     hideMenu(level)
     local m = getMenu(level)
+    local toArm = {}
     local width, y = (level == 1 and anchor and anchor:GetWidth()) or 160, 4
     for i, item in ipairs(items) do
         local b = menuButton(m, i)
@@ -667,7 +689,8 @@ showMenu = function(level, items, anchor)
         local blocked = false
         if item.macro and not sep then
             b.secure = b.secure or W.SecureMacroOverlay(b, function() W.CloseMenus() end)
-            blocked = not b.secure:Arm(item.macro)
+            blocked = InCombatLockdown()
+            toArm[#toArm + 1] = b -- armed after the menu is shown (needs its screen position)
         elseif b.secure then
             b.secure:Disarm()
         end
@@ -699,6 +722,7 @@ showMenu = function(level, items, anchor)
         m:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, cy / scale)
     end
     m:Show()
+    for _, b in ipairs(toArm) do b.secure:Arm(b.item.macro) end
 end
 
 -- anchor (optional): open below that frame, like a dropdown. Otherwise at the cursor.

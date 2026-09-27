@@ -364,7 +364,9 @@ local function setMoveMode(on)
 end
 
 local function build()
-    frame = CreateFrame("Frame", nil, UIParent)
+    -- Named only so ESC closes it through UISpecialFrames (no keyboard capture).
+    frame = CreateFrame("Frame", "HushSettingsFrame", UIParent)
+    tinsert(UISpecialFrames, "HushSettingsFrame")
     frame:SetSize(WIDTH, HEIGHT)
     frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
@@ -440,30 +442,9 @@ local function build()
     frame.border = W.Border(frame, "line")
     for _, side in ipairs({ "top", "bottom", "left", "right" }) do frame.border[side]:SetDrawLayer("OVERLAY", 7) end
 
-    -- ESC closes (same safe keyboard handling as the main window).
-    frame:SetScript("OnKeyDown", function(self, key)
-        if key == "ESCAPE" and not InCombatLockdown() then
-            self:SetPropagateKeyboardInput(false)
-            self:Hide()
-        end
-    end)
-    frame:SetScript("OnShow", function(self)
-        if not InCombatLockdown() then
-            self:EnableKeyboard(true)
-            self:SetPropagateKeyboardInput(true)
-        end
-    end)
-    frame:SetScript("OnHide", function(self)
-        self:EnableKeyboard(false)
+    frame:SetScript("OnHide", function()
         if moveMode then setMoveMode(false) end
         W.CloseMenus()
-    end)
-    Hush:RegisterEvent("PLAYER_REGEN_DISABLED", function() frame:EnableKeyboard(false) end)
-    Hush:RegisterEvent("PLAYER_REGEN_ENABLED", function()
-        if frame:IsShown() then
-            frame:EnableKeyboard(true)
-            frame:SetPropagateKeyboardInput(true)
-        end
     end)
 
     restorePosition()

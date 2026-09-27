@@ -135,3 +135,7 @@
 
 ## 0.1.7 – 2026-09-27
 - Option Settings → Behavior → Chat list: **Categories** (grouped, as before) or **Recent** (Pinned on top, then all chats newest first regardless of category). Categories keep working in the background; in Recent, drag and drop only pins/unpins.
+
+## 0.1.8 – 2026-09-27
+- Fix: keys stopped working while Hush was open. The secure buttons for guild invites (0.1.6) were anchored to Hush frames, which made them protected and blocked Hush's keyboard handling. Secure buttons are now placed at their button's screen position instead of being anchored (hidden while a window is moved or resized, re-placed afterwards).
+- Hush no longer captures the keyboard at all: ESC closes the window and the settings through the game's own `UISpecialFrames`. This needs the window names `HushFrame` and `HushSettingsFrame` (the only new globals).
