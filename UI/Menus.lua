@@ -64,7 +64,8 @@ function Menus.ChatItems(key)
         items[#items + 1] = {
             text = "Guild invite",
             disabled = not Compat.CanGuildInvite() or Hush.Chat.IsGuildMember(conv.target),
-            onClick = function() Compat.GuildInvite(conv.target) end,
+            -- Guild invites are protected: run /ginvite through a secure button.
+            macro = "/ginvite " .. conv.target,
         }
     end
 

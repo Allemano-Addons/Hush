@@ -460,6 +460,12 @@ local function updateHeaderButtons(header, key, conv)
             anchor = hb.button
         end
         hb.button:SetShown(shown)
+        -- Protected actions: def.macro(key, conv) -> slash command run by a secure overlay.
+        if hb.def.macro then
+            hb.secure = hb.secure or W.SecureMacroOverlay(hb.button)
+            local text = shown and hb.def.macro(key, conv)
+            if not (text and hb.secure:Arm(text)) then hb.secure:Disarm() end
+        end
     end
 end
 
@@ -569,3 +575,9 @@ Hush:RegisterCallback("WINDOW_BUILT", function()
     frame:HookScript("OnEnter", function() frame:SetAlpha(1) end)
     frame:HookScript("OnLeave", applyMovingAlpha)
 end, "Main")
+
+-- Secure header overlays are hidden in combat: arm them again when possible.
+Hush:RegisterCallback("WINDOW_SHOWN", function() Main.UpdateHeader(Hush.List.selected) end, "Main")
+Hush:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+    if Main.IsShown() then Main.UpdateHeader(Hush.List.selected) end
+end)

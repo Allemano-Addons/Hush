@@ -198,7 +198,8 @@ function API.AddHeaderInfo(fn, owner)
 end
 
 function API.AddHeaderButton(def, owner)
-    assert(type(def) == "table" and def.text and def.onClick, "Hush.AddHeaderButton: text and onClick required")
+    assert(type(def) == "table" and def.text and (def.onClick or def.macro), "Hush.AddHeaderButton: text and onClick or macro required")
+    def.onClick = def.onClick or function() if InCombatLockdown() then Hush:Print("Not available in combat.") end end
     tinsert(Hush.Main.headerButtons, { def = def, owner = owner })
     API.RefreshHeader()
 end

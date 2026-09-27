@@ -523,6 +523,47 @@ function W.DashedBorder(frame, dash, gap)
 end
 
 -- ---------------------------------------------------------------------------
+-- Secure macro overlay: an invisible SecureActionButton over a Hush button that runs a
+-- slash command when clicked (e.g. "/ginvite Name"). Needed for protected actions such as
+-- guild invites, which addon code may not call directly. Only armed out of combat.
+-- ---------------------------------------------------------------------------
+
+local overlays = {}
+
+function W.SecureMacroOverlay(target, postClick)
+    local o = CreateFrame("Button", nil, UIParent, "SecureActionButtonTemplate")
+    o:RegisterForClicks("AnyUp", "AnyDown") -- the template acts once, per the key-down setting
+    o:SetAttribute("type", "macro")
+    o:SetAllPoints(target)
+    o:Hide()
+    -- Keep the Hush button's hover look.
+    o:SetScript("OnEnter", function() local f = target:GetScript("OnEnter") if f then f(target) end end)
+    o:SetScript("OnLeave", function() local f = target:GetScript("OnLeave") if f then f(target) end end)
+    if postClick then o:SetScript("PostClick", postClick) end
+    target:HookScript("OnHide", function() if not InCombatLockdown() then o:Hide() end end)
+
+    -- Returns false in combat (secure attributes can't change then).
+    function o:Arm(macrotext)
+        if InCombatLockdown() then return false end
+        self:SetFrameStrata(target:GetFrameStrata())
+        self:SetFrameLevel(target:GetFrameLevel() + 10)
+        self:SetAttribute("macrotext", macrotext)
+        self:Show()
+        return true
+    end
+    function o:Disarm()
+        if not InCombatLockdown() then self:Hide() end
+    end
+    overlays[#overlays + 1] = o
+    return o
+end
+
+-- Entering combat: hide all overlays while that is still allowed.
+Hush:RegisterEvent("PLAYER_REGEN_DISABLED", function()
+    for _, o in ipairs(overlays) do o:Hide() end
+end)
+
+-- ---------------------------------------------------------------------------
 -- Context menu (own, flat). No UIDropDownMenu, so no taint.
 -- items: { text, onClick, disabled, danger, checked, submenu = {items}, separator = true }
 -- ---------------------------------------------------------------------------
@@ -622,6 +663,14 @@ showMenu = function(level, items, anchor)
         b.text:SetShown(not sep)
         b.check:SetShown(item.checked == true)
         b.arrow:SetShown(item.submenu ~= nil)
+        -- Protected actions (guild invite) run through a secure overlay; not possible in combat.
+        local blocked = false
+        if item.macro and not sep then
+            b.secure = b.secure or W.SecureMacroOverlay(b, function() W.CloseMenus() end)
+            blocked = not b.secure:Arm(item.macro)
+        elseif b.secure then
+            b.secure:Disarm()
+        end
         if not sep then
             -- Optional font preview (font picker); otherwise the normal menu font.
             if item.font then
@@ -629,8 +678,8 @@ showMenu = function(level, items, anchor)
             else
                 Theme:SetFont(b.text, "regular", 0)
             end
-            b.text:SetText(item.text)
-            local color = item.disabled and "textFaint" or item.danger and "danger" or "text"
+            b.text:SetText(blocked and (item.text .. " (not in combat)") or item.text)
+            local color = (item.disabled or blocked) and "textFaint" or item.danger and "danger" or "text"
             b.text:SetTextColor(Theme:Color(color))
             width = max(width, b.text:GetStringWidth() + 24 + 28)
         end

@@ -128,3 +128,7 @@
 - Fix: a conversation started with "+" using different letter case ("whissel ljud") and the server's spelling ("Whissel Ljud") became two chats, so sent messages ended up in the other one. Names are now matched ignoring case: the server's spelling wins and case duplicates are merged (messages, category, pin and module data). Existing duplicates are merged at login.
 - "+ New message" capitalizes every part of the name (surnames on WoW Forever).
 - New event `CONV_RENAMED(oldKey, newKey)`.
+
+## 0.1.6 – 2026-09-27
+- Fix: "Guild invite" failed with "Interface action failed because of an addon" – guild invites are protected on WoW Forever. It now runs `/ginvite <name>` through an invisible secure button over the menu item (not available in combat, shown as "(not in combat)").
+- Module API: menu items and header buttons accept `macro` for protected actions; header overlays are re-armed when the window opens and after combat.
