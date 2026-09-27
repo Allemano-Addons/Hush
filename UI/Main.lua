@@ -546,7 +546,7 @@ Hush:RegisterCallback("MESSAGE_ADDED", function(_, key, msg, conv)
     if conv.kind == "group" or msg.d == "sys" or conv.request then return end
     if Main.IsShown() or Hush.Compat.InCombat() then return end
     local s = Hush.settings
-    if (msg.d == "in" and s.autoOpenIn) or (msg.d == "out" and s.autoOpenOut) then
+    if (msg.d == "in" and s.incomingAction == "open") or (msg.d == "out" and s.autoOpenOut) then
         Main.Show()
         Hush.List.Select(key)
     end

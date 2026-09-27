@@ -229,8 +229,9 @@ local function buildBehavior(p)
     p:Toggle("Hide whispers in the default chat", "Never while in combat. Everything is always saved in Hush.",
         get("hideWhispers"), set("hideWhispers"))
     p:Toggle("Hide Hush in combat", "Opens again after combat if it was open.", get("hideInCombat"), set("hideInCombat"))
-    p:Toggle("Open on incoming whisper", "Not in combat and not for Requests. Never takes keyboard focus.",
-        get("autoOpenIn"), set("autoOpenIn"))
+    p:Segment("On incoming whisper", "Never in combat, never takes keyboard focus.",
+        { { value = "popup", label = "Popup" }, { value = "open", label = "Open Hush" }, { value = "none", label = "Nothing" } },
+        get("incomingAction"), set("incomingAction"))
     p:Toggle("Open on outgoing whisper", "When you whisper someone from the default chat.",
         get("autoOpenOut"), set("autoOpenOut"))
     p:Toggle("Dim the window while moving", "Fades Hush while your character runs, unless you are typing in it.",
@@ -250,6 +251,19 @@ local function buildNotifications(p)
     p:Button("Preview", nil, "Show", "default", function()
         Hush.Toast.Show("2 whispers during combat", "From Sigrid and Ivar  ·  click to open")
     end)
+
+    p:Header("Popup")
+    p:Segment("Corner", "Or drag it: Unlock & move.",
+        { { value = "TOPLEFT", label = "Top L" }, { value = "TOPRIGHT", label = "Top R" },
+          { value = "BOTTOMLEFT", label = "Bottom L" }, { value = "BOTTOMRIGHT", label = "Bottom R" } },
+        function() return not Hush.db.popup.left and Hush.settings.popupCorner or nil end,
+        function(v) Hush.Popup.SetCorner(v) end)
+    p:Slider("Show for", "Hovering or typing keeps it open.", 4, 20, 1, function(v) return v .. " s" end,
+        get("popupDuration"), set("popupDuration"))
+    p:Toggle("Popups for unknown players", "Whispers that land in Requests.", get("popupRequests"), set("popupRequests"))
+    p:Toggle("Popups for group chat", "Party and raid messages (they always show in the default chat).",
+        get("popupGroups"), set("popupGroups"))
+    p:Button("Preview", nil, "Show", "default", function() Hush.Popup.Preview() end)
 end
 
 local function buildQuickReplies(p)
@@ -402,6 +416,7 @@ end
 local function setMoveMode(on)
     moveMode = on
     Hush.Toast.SetMoveMode(on)
+    Hush.Popup.SetMoveMode(on)
     frame.moveButton.text:SetText(on and "Lock" or "Unlock & move")
 end
 
@@ -469,7 +484,7 @@ local function build()
     frame.moveButton = move
     local moveHint = W.Text(menu, "regular", -2, "textFaint")
     moveHint:SetPoint("BOTTOMLEFT", move, "TOPLEFT", 0, 6)
-    moveHint:SetText("Move the combat notice")
+    moveHint:SetText("Move the combat notice and popups")
 
     -- Content area
     local content = CreateFrame("Frame", nil, frame)

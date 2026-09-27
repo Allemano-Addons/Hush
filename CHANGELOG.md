@@ -162,3 +162,9 @@
 - Right-click a message → **Copy text** (links as plain "[Name]", ready for Ctrl+C).
 - Saved tab: right-click an entry for "Open conversation" and "Delete all saved".
 - Events `SAVED_CHANGED`, `MESSAGE_CONTEXT`.
+
+## 0.1.15 – 2026-09-27
+- **Mini-popup** for incoming whispers (`UI/Popup.lua`): a 320 px window in a corner with the sender's name in class color, the last 1–3 messages (your replies as "You: …") and a reply field. Click the field to type (it never takes the keyboard by itself), Enter sends and marks the chat read; `/r` in the default chat also updates it. Click the name to open the conversation in Hush. Links are clickable.
+- Fades after N seconds; hovering or typing keeps it open, with a short grace period after. Max 3 stacked from the corner (newest nearest), the rest wait in "+N more" (click opens Hush). The same person again updates their popup.
+- No popups in combat (the combat summary covers it), for the conversation already open in Hush, or (by default) for group chat. Unknown players (Requests) do get popups by default.
+- Settings → Behavior → **On incoming whisper**: Popup (default) / Open Hush / Nothing – replaces auto-open (schema 3 switches existing installs to Popup). Settings → Notifications → Popup: corner, duration (4–20 s), popups for Requests, popups for group chat, preview. "Unlock & move" also moves the popups.

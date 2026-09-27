@@ -2,7 +2,7 @@
 local addonName, Hush = ...
 
 Hush.name = addonName
-Hush.SCHEMA = 2
+Hush.SCHEMA = 3
 
 -- ---------------------------------------------------------------------------
 -- Printing
@@ -98,6 +98,11 @@ local DEFAULT_SETTINGS = {
     hideWhispers = true,     -- hide whispers in the default chat (never while in combat)
     hideInCombat = true,     -- hide the Hush window while in combat
     autoOpenIn = true,
+    incomingAction = "popup", -- on incoming whisper: "popup" / "open" (Hush) / "none"
+    popupCorner = "TOPRIGHT",
+    popupDuration = 8,        -- seconds
+    popupRequests = true,     -- popups for unknown players
+    popupGroups = false,      -- popups for party/raid chat
     autoOpenOut = false,
     fadeWhenMoving = true,
     sound = true,
@@ -143,6 +148,10 @@ local MIGRATIONS = {
     [2] = function(db)
         if db.settings then db.settings.autoOpenIn = true end
     end,
+    -- 3: the mini-popup replaces auto-open as the default for incoming whispers.
+    [3] = function(db)
+        if db.settings then db.settings.incomingAction = "popup" end
+    end,
 }
 
 local function initDB()
@@ -162,6 +171,7 @@ local function initDB()
     db.launcher = db.launcher or {}
     db.settingsWindow = db.settingsWindow or {}
     db.toast = db.toast or {}
+    db.popup = db.popup or {}
     db.chars = db.chars or {}
 
     Hush.db = db
