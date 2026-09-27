@@ -217,3 +217,6 @@ Found with `/hush report`:
 
 ## 0.1.26 – 2026-09-27
 - `/hush report clear` empties the recorded error list.
+
+## 0.1.27 – 2026-09-27
+- Module API: `Hush.OpenWhisper(name)`; new title-button icon `list` (for Hush Feed).

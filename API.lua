@@ -57,6 +57,14 @@ function API.Open(key, focus)
     end
 end
 
+-- Open (or start) a whisper conversation with a character by name, with focus in the input.
+function API.OpenWhisper(name)
+    if not name or name == "" then return end
+    Hush.Main.Show()
+    Hush.Main.SetView("current")
+    Hush.Input.StartConversation(name)
+end
+
 -- Open Hush on the latest incoming whisper with focus in the input (key binding HUSH_REPLY).
 function API.ReplyLast()
     local key = Hush.char and Hush.char.lastWhisper

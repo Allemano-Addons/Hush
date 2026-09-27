@@ -34,6 +34,7 @@ Use the `READY` event for work that needs conversations.
 | `Hush.Open(key, focus)` | Open the window on a conversation; `focus` puts the cursor in the input. |
 | `Hush.ReplyLast()` | Open the latest incoming whisper with focus. |
 | `Hush.GetOpenConversation()` | Key of the conversation shown, or `nil`. |
+| `Hush.OpenWhisper(name)` | Open or start a whisper conversation by character name, with focus in the input. |
 
 ## Conversations
 
@@ -99,7 +100,7 @@ Built-in ids: `pinned` (virtual), `guild`, `recruits`, `other`.
 | `Hush.AddChatMenuItems(fn)` | `fn(key, conv) → item or { items }` added to the chat right-click menu. `item = { text, onClick, macro = "/slash command", disabled, danger, checked, submenu = { items }, separator = true }` – `macro` runs a protected action through a secure button (not in combat) |
 | `Hush.AddSettingsPage(def)` | `def = { id, label, build = function(page) end }`, a page in the settings menu. |
 | `Hush.OpenSettings(id)` | Open the settings, optionally on a page. |
-| `Hush.AddTitleButton(def)` | Icon button in the title row. `def = { icon = "person" / "megaphone" / "plus" / "settings" / "more", glyph, tooltip, onClick }` |
+| `Hush.AddTitleButton(def)` | Icon button in the title row. `def = { icon = "person" / "megaphone" / "list" / "plus" / "settings" / "more", glyph, tooltip, onClick }` |
 | `Hush.AddLauncherMenuItems(fn)` | `fn() → item or { items }` added to the launcher right-click menu. |
 
 ## Guild and group

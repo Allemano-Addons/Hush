@@ -288,6 +288,15 @@ local ICONS = {
         local a, b = line(f, -q * 0.75, q * 1.5, q * 0.75, 0, 1.5), line(f, q * 0.75, 0, -q * 0.75, -q * 1.5, 1.5)
         if a then return { a, b } end
     end,
+    list = function(f, s) -- a feed: three rows with a dot
+        local parts = {}
+        for i = 0, 2 do
+            local y = i * 4
+            parts[#parts + 1] = rect(f, 0, y, 2, 2)
+            parts[#parts + 1] = rect(f, 3, y, s - 3, 2)
+        end
+        return parts
+    end,
     person = function(f, s) -- head and shoulders
         return { rect(f, s / 2 - 2, 0, 4, 4), rect(f, 1, s - 4, s - 2, 4) }
     end,
