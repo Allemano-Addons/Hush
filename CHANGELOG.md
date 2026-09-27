@@ -149,3 +149,6 @@
 
 ## 0.1.11 – 2026-09-27
 - Header layout: the info line reads naturally – "Level 10 Priest · <Guild> · Zone" with the class name in its class color. Module info (e.g. a recruit note) gets its own line with a thin accent bar; the header only grows when there is one, and long notes are cut with "...".
+
+## 0.1.12 – 2026-09-27
+- Dialogs: `maxLetters` (default 40) and `allowEmpty` options, so notes can be longer and cleared.

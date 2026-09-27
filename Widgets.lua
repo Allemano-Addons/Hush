@@ -768,7 +768,8 @@ end
 
 -- ---------------------------------------------------------------------------
 -- Dialog inside a parent frame: confirm or text prompt.
--- opts: { title, text, input = default text or nil, okText, danger, onOk(value) }
+-- opts: { title, text, input = default text or nil, okText, danger, onOk(value),
+--         maxLetters (default 40), allowEmpty (input may be saved empty) }
 -- ---------------------------------------------------------------------------
 
 local dialogs = {}
@@ -809,7 +810,7 @@ function W.Dialog(parent, opts)
 
         local function ok()
             local value = d.opts.input and strtrim(d.edit:GetText() or "") or true
-            if d.opts.input and value == "" then return end
+            if d.opts.input and value == "" and not d.opts.allowEmpty then return end
             d:Hide()
             if d.opts.onOk then d.opts.onOk(value) end
         end
@@ -837,6 +838,7 @@ function W.Dialog(parent, opts)
     if opts.input then
         d.edit:ClearAllPoints()
         d.edit:SetPoint("TOPLEFT", d.title, "BOTTOMLEFT", 0, -(12 + textH))
+        d.edit:SetMaxLetters(opts.maxLetters or 40)
         d.edit:SetText(opts.input)
         d.edit:Show()
         d.box:SetHeight(16 + 20 + 12 + textH + 30 + 16 + 28 + 14)

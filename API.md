@@ -106,7 +106,7 @@ Built-in ids: `pinned` (virtual), `guild`, `recruits`, `other`.
 | `Hush.IsGuildMember(name)` | From the cached guild roster. |
 | `Hush.CanGuildInvite()` / `Hush.GuildInvite(name)` | Guild invites are **protected** on WoW Forever: calling `GuildInvite` from addon code is blocked. Use a chat menu item with `macro = "/ginvite " .. name` instead (Hush already has "Guild invite" in the chat menu). |
 | `Hush.InviteToGroup(name)` | |
-| `Hush.ShowDialog(opts)` | Confirm or text prompt inside the Hush window. `opts = { title, text, input, okText, danger, onOk = fn(value) }` |
+| `Hush.ShowDialog(opts)` | Confirm or text prompt inside the Hush window. `opts = { title, text, input, okText, danger, onOk = fn(value), maxLetters (default 40), allowEmpty }` |
 
 Page builder (`page` in `build`), rows are stacked top to bottom:
 
