@@ -110,6 +110,7 @@ local DEFAULT_SETTINGS = {
     font = "auto",           -- "auto" or a font name (game font or LibSharedMedia)
     headingFont = "auto",
     listMode = "categories", -- Whispers tab: "categories" (grouped) or "recent" (newest first)
+    theme = "hush",            -- Settings → Themes (needs /reload)
     maxMessages = 200,         -- per conversation, oldest dropped first
     groupRetentionDays = 14,   -- delete group chats older than this (0 = keep)
     whisperRetentionDays = 0,  -- delete inactive whisper chats older than this (0 = keep)
@@ -220,6 +221,7 @@ end
 Hush:RegisterEvent("ADDON_LOADED", function(_, name)
     if name ~= addonName then return end
     initDB()
+    Hush.Theme:ApplyTheme() -- before any UI exists
     Hush.version = Hush.Compat.GetAddOnMetadata(addonName, "Version") or "?"
 end)
 

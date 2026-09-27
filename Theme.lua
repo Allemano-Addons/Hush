@@ -28,6 +28,56 @@ Theme.colors = {
     warning   = { hex("FF4800") },
 }
 
+-- ---------------------------------------------------------------------------
+-- Themes. "hush" is the original look and changes nothing. Other themes override the
+-- base palette (and suggest an accent). The theme is applied once at load, before any
+-- UI is built, so switching needs a /reload and costs nothing while playing.
+-- ---------------------------------------------------------------------------
+
+Theme.THEMES = {
+    { id = "hush", name = "Hush Original", accent = "3FC7EB" },
+    { id = "midnight", name = "Midnight", accent = "7AA2F7", palette = {
+        window = "0E1220", sidebar = "0A0E19", field = "141A2B", selected = "1B2338", line = "242D45",
+        text = "E4E8F2", textDim = "98A2B8", textFaint = "7A849A" } },
+    { id = "graphite", name = "Graphite", accent = "8AB4F8", palette = {
+        window = "1A1A1C", sidebar = "141416", field = "222225", selected = "2A2A2E", line = "333338",
+        text = "EDEDED", textDim = "A0A0A5", textFaint = "7E7E84" } },
+    { id = "horde", name = "Horde", accent = "C8332E", palette = {
+        window = "160E0E", sidebar = "110A0A", field = "1F1414", selected = "2A1A1A", line = "3A2222",
+        text = "EFE6E4", textDim = "B09A96", textFaint = "8A7672" } },
+    { id = "alliance", name = "Alliance", accent = "E0B24A", palette = {
+        window = "0D1320", sidebar = "0A0F1A", field = "141C2E", selected = "1B2640", line = "25324F",
+        text = "E6ECF5", textDim = "9AA8C0", textFaint = "7784A0" } },
+}
+
+function Theme:GetTheme(id)
+    for _, t in ipairs(self.THEMES) do
+        if t.id == id then return t end
+    end
+    return self.THEMES[1]
+end
+
+-- The original palette, kept for previews while another theme is active.
+local BASE = {}
+for key, c in pairs(Theme.colors) do BASE[key] = { c[1], c[2], c[3] } end
+
+-- Palette of a theme as { key = { r, g, b } } (for previews), falling back to the original.
+function Theme:ThemeColor(t, key)
+    local h = t.palette and t.palette[key]
+    if h then return hex(h) end
+    local c = BASE[key]
+    return c[1], c[2], c[3]
+end
+
+-- Apply the saved theme (called once, right after SavedVariables load).
+function Theme:ApplyTheme()
+    local t = self:GetTheme(Hush.settings and Hush.settings.theme)
+    self.current = t
+    if t.palette then
+        for key, h in pairs(t.palette) do self.colors[key] = { hex(h) } end
+    end
+end
+
 -- r, g, b for a named color.
 function Theme:Color(key)
     local c = self.colors[key]
@@ -219,3 +269,69 @@ function Theme:Snap(value, frame)
     local px = self:Pixel(frame)
     return floor(value / px + 0.5) * px
 end
+
+-- ---------------------------------------------------------------------------
+-- Temporary: check that the classic Blizzard textures exist on this client before
+-- building the "Blizzard Style" theme. Removed once that theme is in place.
+-- ---------------------------------------------------------------------------
+
+local TEST_TEXTURES = {
+    { "dialog background", "Interface\\DialogFrame\\UI-DialogBox-Background-Dark" },
+    { "dialog border", "Interface\\DialogFrame\\UI-DialogBox-Border" },
+    { "dialog header", "Interface\\DialogFrame\\UI-DialogBox-Header" },
+    { "red button", "Interface\\Buttons\\UI-Panel-Button-Up" },
+    { "red button pressed", "Interface\\Buttons\\UI-Panel-Button-Down" },
+    { "button highlight", "Interface\\Buttons\\UI-Panel-Button-Highlight" },
+    { "close button", "Interface\\Buttons\\UI-Panel-MinimizeButton-Up" },
+    { "tooltip border", "Interface\\Tooltips\\UI-Tooltip-Border" },
+}
+
+local testFrame
+Hush:AddSlashCommand("texturetest", function()
+    if testFrame then testFrame:SetShown(not testFrame:IsShown()) return end
+    local texProbe = UIParent:CreateTexture(nil, "BACKGROUND")
+    for _, t in ipairs(TEST_TEXTURES) do
+        local ok = texProbe:SetTexture(t[2])
+        Hush:Print(("  %s: %s"):format(t[1], ok == false and "|cffe0564fmissing|r" or "|cff3fc77fok|r"))
+    end
+    texProbe:Hide()
+
+    local f = CreateFrame("Frame", nil, UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+    f:SetSize(300, 190)
+    f:SetPoint("CENTER", 0, 80)
+    f:SetFrameStrata("DIALOG")
+    if f.SetBackdrop then
+        f:SetBackdrop({
+            bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+            edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+            tile = true, tileSize = 32, edgeSize = 32,
+            insets = { left = 11, right = 12, top = 12, bottom = 11 },
+        })
+    end
+    local header = f:CreateTexture(nil, "ARTWORK")
+    header:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+    header:SetSize(256, 64)
+    header:SetPoint("TOP", 0, 12)
+    local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOP", header, "TOP", 0, -14)
+    title:SetText("Hush")
+    for i, label in ipairs({ "Blizzard Style", "Close test" }) do
+        local b = CreateFrame("Button", nil, f)
+        b:SetSize(160, 24)
+        b:SetPoint("TOP", 0, -40 - (i - 1) * 30)
+        b:SetNormalTexture("Interface\\Buttons\\UI-Panel-Button-Up")
+        b:SetPushedTexture("Interface\\Buttons\\UI-Panel-Button-Down")
+        b:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight", "ADD")
+        for _, tex in ipairs({ b:GetNormalTexture(), b:GetPushedTexture(), b:GetHighlightTexture() }) do
+            tex:SetTexCoord(0, 0.625, 0, 0.6875)
+        end
+        local fs = b:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        fs:SetPoint("CENTER")
+        fs:SetText(label)
+        if i == 2 then b:SetScript("OnClick", function() f:Hide() end) end
+    end
+    local note = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    note:SetPoint("BOTTOM", 0, 22)
+    note:SetText("Texture test – take a screenshot")
+    testFrame = f
+end, "show a test window with classic Blizzard textures")

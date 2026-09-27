@@ -222,6 +222,78 @@ local function buildAppearance(p)
     p:Toggle("Show timestamps", "24-hour time next to each sender.", get("timestamps"), set("timestamps"))
 end
 
+local function buildThemes(p)
+    p:Text("A theme changes the colors of Hush. Switching needs a UI reload; your settings, chats and "
+        .. "features stay the same. Picking a theme also sets its accent color, which you can still change under Appearance.")
+    local themes = Theme.THEMES
+    p:Custom(#themes * 52, function(c)
+        local cards = {}
+        for i, t in ipairs(themes) do
+            local card = CreateFrame("Button", nil, c)
+            card:SetPoint("TOPLEFT", 0, -(i - 1) * 52)
+            card:SetPoint("TOPRIGHT", 0, -(i - 1) * 52)
+            card:SetHeight(44)
+            card.bg = W.Fill(card, "field", 1)
+            card.bg:SetAllPoints()
+            card.border = W.Border(card, "line")
+
+            -- Palette preview: window, sidebar, field, line, text, accent.
+            local x = 12
+            for _, key in ipairs({ "window", "sidebar", "field", "line", "text" }) do
+                local sw = card:CreateTexture(nil, "ARTWORK")
+                sw:SetSize(16, 16)
+                sw:SetPoint("LEFT", x, 0)
+                sw:SetColorTexture(Theme:ThemeColor(t, key))
+                x = x + 18
+            end
+            local acc = card:CreateTexture(nil, "ARTWORK")
+            acc:SetSize(16, 16)
+            acc:SetPoint("LEFT", x + 4, 0)
+            acc:SetColorTexture(Theme.Hex(t.accent))
+
+            card.name = W.Text(card, "semibold", 1, "text")
+            card.name:SetPoint("LEFT", x + 34, 0)
+            card.name:SetText(t.name)
+            card.tag = W.Text(card, "regular", -1, "textFaint")
+            card.tag:SetPoint("RIGHT", -12, 0)
+
+            card:SetScript("OnEnter", function(self) self.bg:SetColorTexture(Theme:Color("selected")) end)
+            card:SetScript("OnLeave", function(self) self.bg:SetColorTexture(Theme:Color("field")) end)
+            card:SetScript("OnClick", function()
+                if (Hush.settings.theme or "hush") == t.id then return end
+                Hush.settings.theme = t.id
+                Hush.settings.accent = t.accent
+                p:Refresh()
+                W.Dialog(frame, {
+                    title = "Reload UI",
+                    text = "\"" .. t.name .. "\" is applied after a UI reload. Reload now?",
+                    okText = "Reload",
+                    onOk = function() ReloadUI() end,
+                })
+            end)
+            card.theme = t
+            cards[i] = card
+        end
+        return function()
+            local chosen = Hush.settings.theme or "hush"
+            local applied = Theme.current and Theme.current.id or "hush"
+            for _, card in ipairs(cards) do
+                local id = card.theme.id
+                if id == applied and id == chosen then
+                    card.tag:SetText("Active")
+                    card.border:SetColor(Theme:Accent())
+                elseif id == chosen then
+                    card.tag:SetText("Selected – reload to apply")
+                    card.border:SetColor(Theme:Accent())
+                else
+                    card.tag:SetText("")
+                    card.border:SetColor(Theme:Color("line"))
+                end
+            end
+        end
+    end)
+end
+
 local function buildBehavior(p)
     p:Segment("Chat list", "Categories groups chats. Recent shows the newest first (pinned stay on top).",
         { { value = "categories", label = "Categories" }, { value = "recent", label = "Recent" } },
@@ -604,6 +676,7 @@ end
 
 Settings.AddPage({ id = "general", label = "General", build = buildGeneral })
 Settings.AddPage({ id = "appearance", label = "Appearance", build = buildAppearance })
+Settings.AddPage({ id = "themes", label = "Themes", build = buildThemes })
 Settings.AddPage({ id = "behavior", label = "Behavior", build = buildBehavior })
 Settings.AddPage({ id = "notifications", label = "Notifications", build = buildNotifications })
 Settings.AddPage({ id = "quickreplies", label = "Quick replies", build = buildQuickReplies })
