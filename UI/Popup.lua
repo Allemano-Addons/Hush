@@ -230,7 +230,12 @@ local function fill(f, data)
         local fs = line(f, i)
         fs:ClearAllPoints()
         fs:SetPoint("TOPLEFT", PAD, y)
-        if l.out then
+        if l.sys then
+            -- Same colors as the system dots in the conversation view.
+            local key = l.sys == "notfound" and "danger" or (l.sys == "afk" or l.sys == "dnd") and "away" or "textFaint"
+            fs:SetText(l.text)
+            fs:SetTextColor(Theme:Color(key))
+        elseif l.out then
             fs:SetText("|cff9aa3adYou:|r " .. l.text)
             fs:SetTextColor(Theme:Color("textDim"))
         else
@@ -249,12 +254,20 @@ local function dataFor(key)
     local conv = Data.Get(key)
     if not conv then return nil end
     local lines = {}
+    -- The newest line may be a system reply (player not found, AFK, DND): show it, so it is
+    -- clear why a reply did not arrive.
+    local newest = conv.msgs[#conv.msgs]
+    local sysLine = newest and newest.d == "sys" and { text = newest.m, sys = newest.k or "sys", t = newest.t } or nil
     for i = #conv.msgs, 1, -1 do
         local m = conv.msgs[i]
         if m.d ~= "sys" then
             tinsert(lines, 1, { text = m.m, out = m.d == "out", t = m.t })
             if #lines >= MAX_LINES then break end
         end
+    end
+    if sysLine then
+        if #lines >= MAX_LINES then tremove(lines, 1) end
+        lines[#lines + 1] = sysLine
     end
     local r, g, b = Hush.List.NameColor(conv)
     local last = lines[#lines]

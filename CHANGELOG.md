@@ -168,3 +168,6 @@
 - Fades after N seconds; hovering or typing keeps it open, with a short grace period after. Max 3 stacked from the corner (newest nearest), the rest wait in "+N more" (click opens Hush). The same person again updates their popup.
 - No popups in combat (the combat summary covers it), for the conversation already open in Hush, or (by default) for group chat. Unknown players (Requests) do get popups by default.
 - Settings → Behavior → **On incoming whisper**: Popup (default) / Open Hush / Nothing – replaces auto-open (schema 3 switches existing installs to Popup). Settings → Notifications → Popup: corner, duration (4–20 s), popups for Requests, popups for group chat, preview. "Unlock & move" also moves the popups.
+
+## 0.1.16 – 2026-09-27
+- Popup: if the newest line is a system reply (player not found, AFK, DND) it is shown in the popup in the same color as in Hush, so it is clear why a reply did not arrive.
