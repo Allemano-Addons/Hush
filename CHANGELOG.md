@@ -200,3 +200,6 @@
 - Fix: "Reload" after picking a theme still did nothing. Dialog buttons with a protected action now use the method EllesmereUI uses on WoW Forever: `InsecureActionButtonTemplate`, mouse-up only (`useOnKeyDown = false`), so the dialog closing on the press can no longer swallow the action.
 - Visible texts use ">" instead of "→" (Friz Quadrata has no arrow glyph).
 - Removed the temporary `/hush texturetest`.
+
+## 0.1.23 – 2026-09-27
+- Fix: the theme "Reload" button still did nothing. Like EllesmereUI, the /reload button is now an `InsecureActionButtonTemplate` *inside* the dialog button (it moves and raises with it); before it floated above it, and the settings window raised itself over it on the press.

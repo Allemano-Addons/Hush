@@ -620,16 +620,34 @@ end
 -- mouse-up only and useOnKeyDown = false, so the action fires on release (a window that
 -- closes on the press can no longer swallow it).
 function W.SecureMacroOverlay(target, postClick, opts)
-    local upOnly = opts and opts.upOnly
-    local template = upOnly and "InsecureActionButtonTemplate" or "SecureActionButtonTemplate"
-    local ok, o = pcall(CreateFrame, "Button", nil, UIParent, template)
-    if not ok then o = CreateFrame("Button", nil, UIParent, "SecureActionButtonTemplate") end
-    if upOnly then
-        o:RegisterForClicks("AnyUp")
-        o:SetAttribute("useOnKeyDown", false)
-    else
-        o:RegisterForClicks("AnyUp", "AnyDown") -- the template acts once, per the key-down setting
+    -- EllesmereUI's method (used for /reload): an InsecureActionButton INSIDE the button.
+    -- It is not protected, so it can live in Hush frames, and it moves and raises with its
+    -- button (a toplevel window raising itself on the press can't cover it).
+    if opts and opts.upOnly then
+        local ok, b = pcall(CreateFrame, "Button", nil, target, "InsecureActionButtonTemplate")
+        if ok then
+            b:SetAllPoints(target)
+            b:SetFrameLevel(target:GetFrameLevel() + 5)
+            b:RegisterForClicks("AnyUp")
+            b:SetAttribute("useOnKeyDown", false)
+            b:SetAttribute("type", "macro")
+            b:SetScript("OnEnter", function() local f = target:GetScript("OnEnter") if f then f(target) end end)
+            b:SetScript("OnLeave", function() local f = target:GetScript("OnLeave") if f then f(target) end end)
+            if postClick then b:HookScript("OnClick", postClick) end
+            function b:Arm(macrotext)
+                if InCombatLockdown() then return false end
+                self:SetAttribute("macrotext", macrotext)
+                self:Show()
+                return true
+            end
+            function b:Disarm() if not InCombatLockdown() then self:Hide() end end
+            b:Hide()
+            return b
+        end
     end
+
+    local o = CreateFrame("Button", nil, UIParent, "SecureActionButtonTemplate")
+    o:RegisterForClicks("AnyUp", "AnyDown") -- the template acts once, per the key-down setting
     o:SetAttribute("type", "macro")
     o:Hide()
     -- Keep the Hush button's hover look.
