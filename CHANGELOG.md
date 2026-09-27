@@ -191,3 +191,7 @@
 
 ## 0.1.20 – 2026-09-27
 - Fix: "Reload" in the theme dialog did nothing (`ReloadUI()` is blocked for addons on WoW Forever). It now runs `/reload` through a secure button. Dialogs accept a `macro` option for this.
+
+## 0.1.21 – 2026-09-27
+- **Blizzard Style** theme: the main window, settings and the Recruit ad panel get the classic dark dialog background with the stone border drawn above the content; popups, notices, menus, tooltips and the launcher get the Blizzard tooltip frame; buttons become the red panel buttons with gold text; titles are gold and headings use Friz Quadrata. Everything is gated by `Theme:IsBlizzard()`, so the other themes are unchanged.
+- Widgets: `W.SkinPanel(frame, opts)` and `W.SkinButton(button)` (do nothing unless Blizzard Style is active).

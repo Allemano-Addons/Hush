@@ -48,6 +48,11 @@ Theme.THEMES = {
     { id = "alliance", name = "Alliance", accent = "E0B24A", palette = {
         window = "0D1320", sidebar = "0A0F1A", field = "141C2E", selected = "1B2640", line = "25324F",
         text = "E6ECF5", textDim = "9AA8C0", textFaint = "7784A0" } },
+    -- Classic Blizzard frames (dialog backdrop, stone border, red buttons). Only this theme
+    -- uses textures; everything it changes is gated by Theme:IsBlizzard().
+    { id = "blizzard", name = "Blizzard Style", accent = "FFD100", style = "blizzard", palette = {
+        window = "000000", sidebar = "000000", field = "0B0B0B", selected = "2B2416", line = "5A5344",
+        text = "FFFFFF", textDim = "CFC6AE", textFaint = "9A9280" } },
 }
 
 function Theme:GetTheme(id)
@@ -67,6 +72,10 @@ function Theme:ThemeColor(t, key)
     if h then return hex(h) end
     local c = BASE[key]
     return c[1], c[2], c[3]
+end
+
+function Theme:IsBlizzard()
+    return self.current ~= nil and self.current.style == "blizzard"
 end
 
 -- Apply the saved theme (called once, right after SavedVariables load).
@@ -225,6 +234,7 @@ function Theme:ApplyFontChoice()
     end
     local sharedCondensed = self:FontPath("Barlow Condensed")
     self.fonts.heading = head
+        or (self:IsBlizzard() and FALLBACK) -- Blizzard Style: Friz Quadrata headings
         or (valid(BUNDLED.heading) and BUNDLED.heading)
         or (sharedCondensed and valid(sharedCondensed) and sharedCondensed)
         or FALLBACK

@@ -608,6 +608,7 @@ local function build()
     local name = W.Text(title, "heading", 3, "text")
     name:SetPoint("LEFT", square, "RIGHT", 8, 0)
     name:SetText("SETTINGS")
+    frame.titleText = name
 
     -- Bottom buttons
     local clear = W.Button(menu, "Clear all chats", "ghost", function()
@@ -643,6 +644,7 @@ local function build()
 
     frame.border = W.Border(frame, "line")
     for _, side in ipairs({ "top", "bottom", "left", "right" }) do frame.border[side]:SetDrawLayer("OVERLAY", 7) end
+    W.SkinPanel(frame, { kind = "dialog", hide = { frame.bg, menu.bg }, borders = { frame.border }, title = frame.titleText })
 
     frame:SetScript("OnHide", function()
         if moveMode then setMoveMode(false) end

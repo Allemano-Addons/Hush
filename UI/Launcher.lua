@@ -73,6 +73,7 @@ local function build()
     button.bg = W.Fill(button, "sidebar", 0.95)
     button.bg:SetAllPoints()
     button.border = W.Border(button, "line")
+    W.SkinPanel(button, { kind = "tooltip", hide = { button.bg }, borders = { button.border } })
 
     -- Speech bubble drawn from two rectangles, on whole pixels.
     local bubble = button:CreateTexture(nil, "ARTWORK")

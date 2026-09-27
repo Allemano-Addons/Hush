@@ -94,6 +94,76 @@ function W.ApplyAccent()
 end
 
 -- ---------------------------------------------------------------------------
+-- Blizzard Style theme: classic textures on panels and buttons. Every function here
+-- does nothing unless that theme is active, so the other themes are untouched.
+-- ---------------------------------------------------------------------------
+
+local BLIZZ = {
+    dialogBg = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+    dialogEdge = "Interface\\DialogFrame\\UI-DialogBox-Border",
+    tipBg = "Interface\\Tooltips\\UI-Tooltip-Background",
+    tipEdge = "Interface\\Tooltips\\UI-Tooltip-Border",
+    buttonUp = "Interface\\Buttons\\UI-Panel-Button-Up",
+    buttonDown = "Interface\\Buttons\\UI-Panel-Button-Down",
+    buttonHighlight = "Interface\\Buttons\\UI-Panel-Button-Highlight",
+}
+W.GOLD = { 1, 0.82, 0 }
+
+local function hideBorder(b)
+    if not b then return end
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do
+        if b[side] then b[side]:Hide() end
+    end
+end
+
+-- opts = { kind = "dialog" | "tooltip", hide = { textures }, borders = { W.Border objects }, title = fontString }
+-- Dialog: dark dialog background + stone border drawn above the content (like Blizzard windows).
+-- Tooltip: the tooltip background and border, for small boxes (popup, menus, notices).
+function W.SkinPanel(frame, opts)
+    if not Theme:IsBlizzard() or frame.skinBg then return end
+    opts = opts or {}
+    for _, t in ipairs(opts.hide or {}) do t:Hide() end
+    for _, b in ipairs(opts.borders or {}) do hideBorder(b) end
+    local dialog = opts.kind ~= "tooltip"
+
+    local bg = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    bg:SetAllPoints()
+    bg:SetFrameLevel(frame:GetFrameLevel())
+    bg:SetBackdrop({
+        bgFile = dialog and BLIZZ.dialogBg or BLIZZ.tipBg, tile = true, tileSize = dialog and 32 or 16,
+        insets = dialog and { left = 11, right = 12, top = 12, bottom = 11 } or { left = 4, right = 4, top = 4, bottom = 4 },
+    })
+    if not dialog then bg:SetBackdropColor(0, 0, 0, 0.92) end
+
+    local edge = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    edge:SetAllPoints()
+    edge:SetFrameLevel(frame:GetFrameLevel() + 40) -- above the content, never takes the mouse
+    edge:SetBackdrop({ edgeFile = dialog and BLIZZ.dialogEdge or BLIZZ.tipEdge, edgeSize = dialog and 32 or 16 })
+    if not dialog then edge:SetBackdropBorderColor(0.7, 0.7, 0.7, 1) end
+
+    if opts.title then opts.title:SetTextColor(W.GOLD[1], W.GOLD[2], W.GOLD[3]) end
+    frame.skinBg, frame.skinEdge = bg, edge
+end
+
+-- The red panel button with gold text.
+function W.SkinButton(b)
+    if not Theme:IsBlizzard() or b.skinned then return end
+    b.skinned = true
+    if b.bg then b.bg:Hide() end
+    hideBorder(b.border)
+    b:SetNormalTexture(BLIZZ.buttonUp)
+    b:SetPushedTexture(BLIZZ.buttonDown)
+    b:SetHighlightTexture(BLIZZ.buttonHighlight, "ADD")
+    for _, tex in ipairs({ b:GetNormalTexture(), b:GetPushedTexture(), b:GetHighlightTexture() }) do
+        tex:SetTexCoord(0, 0.625, 0, 0.6875)
+    end
+    b.text:SetTextColor(W.GOLD[1], W.GOLD[2], W.GOLD[3])
+    -- Keep the gold text through the flat hover scripts.
+    b:HookScript("OnEnter", function(self) self.text:SetTextColor(1, 1, 1) end)
+    b:HookScript("OnLeave", function(self) self.text:SetTextColor(W.GOLD[1], W.GOLD[2], W.GOLD[3]) end)
+end
+
+-- ---------------------------------------------------------------------------
 -- Text
 -- ---------------------------------------------------------------------------
 
@@ -145,7 +215,8 @@ function W.ShowTooltip(owner, text)
         tip:SetClampedToScreen(true)
         tip.bg = W.Fill(tip, "field", 0.98)
         tip.bg:SetAllPoints()
-        W.Border(tip, "line")
+        tip.border = W.Border(tip, "line")
+        W.SkinPanel(tip, { kind = "tooltip", hide = { tip.bg }, borders = { tip.border } })
         tip.text = W.Text(tip, "regular", -1, "text")
         tip.text:SetPoint("CENTER")
     end
@@ -329,6 +400,7 @@ function W.Button(parent, label, style, onClick)
         b:SetScript("OnEnter", function(self) self.bg:SetColorTexture(Theme:Color("selected")) end)
         b:SetScript("OnLeave", function(self) self.bg:SetColorTexture(Theme:Color("field")) end)
     end
+    if style ~= "ghost" then W.SkinButton(b) end -- Blizzard Style only
     if onClick then b:SetScript("OnClick", onClick) end
     return b
 end
@@ -670,6 +742,7 @@ local function getMenu(level)
     m.bg = W.Fill(m, "field", 0.98)
     m.bg:SetAllPoints()
     m.border = W.Border(m, "line")
+    W.SkinPanel(m, { kind = "tooltip", hide = { m.bg }, borders = { m.border } })
     m.buttons = {}
     m:Hide()
     menus[level] = m
@@ -791,11 +864,12 @@ function W.Dialog(parent, opts)
         box:SetPoint("CENTER")
         box.bg = W.Fill(box, "window", 1)
         box.bg:SetAllPoints()
-        W.Border(box, "line")
+        box.border = W.Border(box, "line")
         d.box = box
 
         d.title = W.Text(box, "heading", 2, "text")
         d.title:SetPoint("TOPLEFT", 16, -16)
+        W.SkinPanel(box, { kind = "dialog", hide = { box.bg }, borders = { box.border }, title = d.title })
         d.text = W.Text(box, "regular", 0, "textDim")
         d.text:SetPoint("TOPLEFT", d.title, "BOTTOMLEFT", 0, -8)
         d.text:SetWidth(308)

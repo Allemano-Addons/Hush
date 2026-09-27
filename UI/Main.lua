@@ -55,6 +55,7 @@ function Main.ApplyBackgroundAlpha()
     local a = Hush.settings.bgAlpha or 0.95
     frame.bg:SetAlpha(a)
     frame.sidebar.bg:SetAlpha(a)
+    if frame.skinBg then frame.skinBg:SetAlpha(a) end
 end
 
 -- ---------------------------------------------------------------------------
@@ -185,6 +186,7 @@ local function buildSidebar()
     local name = W.Text(title, "heading", 3, "text")
     name:SetPoint("LEFT", square, "RIGHT", 8, 0)
     name:SetText("HUSH")
+    frame.titleText = name
 
     local settingsBtn = W.IconButton(title, "settings", 22, "Settings", function()
         Hush:Fire("OPEN_SETTINGS")
@@ -355,6 +357,7 @@ local function build()
     frame.border = W.Border(frame, "line")
     -- Border above children.
     for _, side in ipairs({ "top", "bottom", "left", "right" }) do frame.border[side]:SetDrawLayer("OVERLAY", 7) end
+    W.SkinPanel(frame, { kind = "dialog", hide = { frame.bg, frame.sidebar.bg }, borders = { frame.border }, title = frame.titleText })
 
     restorePosition()
     Main.ApplyBackgroundAlpha()
