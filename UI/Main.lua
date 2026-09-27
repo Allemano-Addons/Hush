@@ -65,6 +65,7 @@ local TABS = {
     { id = "whispers", label = "Whispers" },
     { id = "groups",   label = "Groups" },
     { id = "requests", label = "Requests" },
+    { id = "saved",    label = "Saved" },
 }
 
 local function updateTabs()
@@ -234,6 +235,9 @@ local function buildSidebar()
     list:SetPoint("BOTTOMRIGHT", bottom, "TOPRIGHT", 0, 0)
     list.empty = W.Text(list, "regular", 0, "textFaint")
     list.empty:SetPoint("TOP", 0, -24)
+    list.empty:SetWidth(S.sidebarW - 40)
+    list.empty:SetWordWrap(true)
+    list.empty:SetJustifyH("CENTER")
     list.empty:SetText("No conversations yet")
     frame.list = list
     Main.listArea = list
@@ -465,6 +469,12 @@ end
 -- Info line, read as a sentence: "Level 10 Priest  ·  <Slakthuset>  ·  Durotar".
 local function infoLine(conv)
     local info, parts = conv.info or {}, {}
+    if conv.kind == "saved" then
+        local n = #conv.msgs
+        local text = ("%d saved message%s"):format(n, n == 1 and "" or "s")
+        if not Data.Get(conv.convKey) then text = text .. "  ·  conversation deleted" end
+        return text
+    end
     if conv.kind == "group" then
         if Hush.Groups.IsActive(conv) then
             parts[#parts + 1] = "Active  ·  " .. Hush.Groups.MemberCount() .. " members"

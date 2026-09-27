@@ -154,8 +154,17 @@ end
 
 local function onHyperlinkLeave() GameTooltip:Hide() end
 
+local function onMessageMouseUp(self, button)
+    if button == "RightButton" and self.msg then
+        Hush:Fire("MESSAGE_CONTEXT", current, self.msg)
+    end
+end
+
 local function enableLinks(f)
     f:SetHyperlinksEnabled(true)
+    -- Right-click a message: save, copy (see Menus.lua).
+    f:EnableMouse(true)
+    f:SetScript("OnMouseUp", onMessageMouseUp)
     f:SetScript("OnHyperlinkClick", onHyperlinkClick)
     f:SetScript("OnHyperlinkEnter", onHyperlinkEnter)
     f:SetScript("OnHyperlinkLeave", onHyperlinkLeave)
@@ -177,6 +186,9 @@ local function createMsg()
     f.name = W.Text(f, "semibold", 0)
     f.time = W.Text(f, "regular", -2, "textFaint")
     f.bubble = f:CreateTexture(nil, "BACKGROUND")
+    f.savedBar = f:CreateTexture(nil, "ARTWORK") -- thin accent bar on saved messages
+    f.savedBar:SetWidth(2)
+    f.savedBar:Hide()
 
     f.text = W.Text(f, "regular", 0, "text")
     f.text:SetWordWrap(true)
@@ -187,6 +199,7 @@ end
 
 local function fillMsg(f, it)
     local m = it.msg
+    f.msg = m
     local left = textLeft()
     local name, r, g, b = senderOf(it.conv, m)
     local mine = it.bubble and m.d == "out"   -- own bubbles sit on the right, without name/portrait
@@ -205,13 +218,24 @@ local function fillMsg(f, it)
         f.name:SetPoint("TOPLEFT", left, -10)
         f.name:SetText(name)
         f.name:SetTextColor(r, g, b)
-        f.time:SetText(date("%H:%M", m.t) .. (m.k == "leader" and "  ·  Leader" or m.k == "warning" and "  ·  Raid warning" or ""))
+        local tag = m.k == "leader" and "  ·  Leader" or m.k == "warning" and "  ·  Raid warning" or ""
+        if m.saved then
+            local ar, ag, ab = Theme:Accent()
+            tag = tag .. ("  ·  |cff%02x%02x%02xSaved|r"):format(floor(ar * 255), floor(ag * 255), floor(ab * 255))
+        end
+        f.time:SetText(date("%H:%M", m.t) .. tag)
         if mine then
             f.time:SetPoint("TOPRIGHT", -PAD_RIGHT, -10)
         else
             f.time:SetPoint("LEFT", f.name, "RIGHT", 8, 0)
         end
     end
+
+    f.savedBar:ClearAllPoints()
+    f.savedBar:SetPoint("TOPRIGHT", f.text, "TOPLEFT", it.bubble and -(BPX + 4) or -8, 0)
+    f.savedBar:SetPoint("BOTTOMRIGHT", f.text, "BOTTOMLEFT", it.bubble and -(BPX + 4) or -8, 0)
+    f.savedBar:SetColorTexture(Theme:Accent())
+    f.savedBar:SetShown(m.saved == true)
 
     f.text:ClearAllPoints()
     f.text:SetWidth(it.textW)
@@ -295,6 +319,7 @@ local function createSys()
 end
 
 local function fillSys(f, it)
+    f.msg = it.msg
     f.text:ClearAllPoints()
     f.text:SetPoint("TOPLEFT", textLeft(), -4)
     f.text:SetWidth(textWidth())
@@ -467,3 +492,5 @@ Hush:RegisterCallback("CONV_RENAMED", function(_, oldKey, newKey)
         Hush.Main.UpdateHeader(newKey)
     end
 end, "Conversation")
+-- A message was saved or removed: update the markers (and the saved view itself).
+Hush:RegisterCallback("SAVED_CHANGED", function() if current then Conv.Refresh(atBottom()) end end, "Conversation")

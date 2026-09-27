@@ -247,6 +247,13 @@ Hush:RegisterCallback("CONV_OPENED", function(_, key, conv)
         drafts[key] = nil
         updateCounter()
     end
+    -- Saved messages are read-only: no input.
+    if conv.kind == "saved" then
+        footer:Hide()
+        footer:SetHeight(1)
+        if compose then compose:Hide() end
+        return
+    end
     footer:SetHeight(FOOTER_H)
     footer:Show()
     if conv.kind == "group" then

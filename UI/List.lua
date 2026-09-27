@@ -22,6 +22,7 @@ local EMPTY_TEXT = {
     whispers = "No conversations yet",
     groups = "No group chats yet",
     requests = "No requests",
+    saved = "No saved messages yet. Right-click a message → Save message.",
 }
 
 -- ---------------------------------------------------------------------------
@@ -145,6 +146,16 @@ local function collect()
                 end
             end
         end
+    elseif tab == "saved" then
+        -- One row per person/group with saved messages, newest first.
+        local list = {}
+        for convKey, src in Hush.Saved.Sources() do
+            if matches(src, query) then
+                list[#list + 1] = { key = Hush.Saved.KeyFor(convKey), conv = src, last = src.last or 0 }
+            end
+        end
+        sort(list, byLast)
+        for _, e in ipairs(list) do addConv(e.key, e.conv) end
     else
         local list = {}
         for key, conv in pairs(Data.All()) do
@@ -530,7 +541,7 @@ end, "List")
 Hush:RegisterCallback("WINDOW_SHOWN", function() List.Refresh() end, "List")
 Hush:RegisterCallback("TAB_CHANGED", function() offset = 0; List.Refresh() end, "List")
 Hush:RegisterCallback("SEARCH_CHANGED", function() offset = 0; List.Refresh() end, "List")
-for _, e in ipairs({ "MESSAGE_ADDED", "CONV_CREATED", "CONV_UPDATED", "CONV_MOVED", "CONV_DELETED", "UNREAD_CHANGED", "CATEGORIES_CHANGED" }) do
+for _, e in ipairs({ "MESSAGE_ADDED", "CONV_CREATED", "CONV_UPDATED", "CONV_MOVED", "CONV_DELETED", "UNREAD_CHANGED", "CATEGORIES_CHANGED", "SAVED_CHANGED" }) do
     Hush:RegisterCallback(e, queueRefresh, "List")
 end
 Hush:RegisterCallback("CONV_DELETED", function(_, key)

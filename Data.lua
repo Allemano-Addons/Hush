@@ -19,7 +19,10 @@ function Data.WhisperKey(name) return "W:" .. name end
 function Data.BNetKey(tag) return "B:" .. tag end
 
 function Data.Get(key)
-    return Hush.char and Hush.char.convs[key]
+    if not Hush.char then return nil end
+    -- Saved-message sources ("S|...") look like conversations to the UI.
+    if Hush.Saved and Hush.Saved.IsSavedKey(key) then return Hush.Saved.Get(key) end
+    return Hush.char.convs[key]
 end
 
 function Data.All()
@@ -28,6 +31,7 @@ end
 
 -- Which list tab a conversation belongs to: "whispers", "requests" or "groups".
 function Data.TabOf(conv)
+    if conv.kind == "saved" then return "saved" end
     if conv.kind == "group" then return "groups" end
     if conv.request then return "requests" end
     return "whispers"
@@ -134,6 +138,8 @@ local function preview(text)
     end
     return p
 end
+
+Data.Preview = preview
 
 -- Is the player currently looking at this conversation? Set by the UI.
 function Data.IsViewing(key)

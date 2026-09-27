@@ -14,12 +14,15 @@ end
 -- Chat menu
 -- ---------------------------------------------------------------------------
 
+local savedSourceItems -- defined further down (saved messages section)
+
 -- Extra entries from modules: fn(key, conv) -> item or list of items.
 Menus.extraChatItems = {}
 
 function Menus.ChatItems(key)
     local conv = Data.Get(key)
     if not conv then return {} end
+    if conv.kind == "saved" then return savedSourceItems(key, conv) end
     local items = {}
 
     if conv.kind ~= "group" then
@@ -101,6 +104,66 @@ function Menus.OpenChat(key)
     if Hush.List.IsDragging() then return end
     W.OpenMenu(Menus.ChatItems(key))
 end
+
+-- ---------------------------------------------------------------------------
+-- Saved messages: message menu and the menu for a saved source
+-- ---------------------------------------------------------------------------
+
+-- Plain text for copying: links become "[Name]", colors are removed.
+local function plain(text)
+    return (text or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1"):gsub("|T.-|t", "")
+end
+
+function Menus.CopyText(text)
+    dialog({
+        title = "Copy text",
+        text = "Press Ctrl+C to copy, then Esc.",
+        input = plain(text),
+        maxLetters = 4000,
+        allowEmpty = true,
+        okText = "Done",
+    })
+end
+
+savedSourceItems = function(_, src)
+    local items = {}
+    if Data.Get(src.convKey) then
+        items[#items + 1] = { text = "Open conversation", onClick = function() Hush.List.Select(src.convKey) end }
+    end
+    items[#items + 1] = { separator = true }
+    items[#items + 1] = {
+        text = "Delete all saved",
+        danger = true,
+        onClick = function()
+            dialog({
+                title = "Delete saved messages",
+                text = ("Delete all %d saved message%s from %s?"):format(#src.msgs, #src.msgs == 1 and "" or "s", src.display),
+                okText = "Delete",
+                danger = true,
+                onOk = function() Hush.Saved.RemoveAll(src.convKey) end,
+            })
+        end,
+    }
+    return items
+end
+
+-- Right-click on a message in the conversation view.
+Hush:RegisterCallback("MESSAGE_CONTEXT", function(_, key, msg)
+    local conv = key and Data.Get(key)
+    if not conv or not msg then return end
+    local items = {}
+    if conv.kind == "saved" then
+        items[#items + 1] = { text = "Remove from saved", onClick = function() Hush.Saved.Remove(conv.convKey, msg) end }
+    elseif msg.d ~= "sys" then
+        if msg.saved then
+            items[#items + 1] = { text = "Remove from saved", onClick = function() Hush.Saved.Remove(key, msg) end }
+        else
+            items[#items + 1] = { text = "Save message", onClick = function() Hush.Saved.Add(key, msg) end }
+        end
+    end
+    items[#items + 1] = { text = "Copy text", onClick = function() Menus.CopyText(msg.m) end }
+    W.OpenMenu(items)
+end, "Menus")
 
 -- ---------------------------------------------------------------------------
 -- Category menu

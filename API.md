@@ -133,6 +133,8 @@ Getters are called every time the page is shown.
 | `CONV_MOVED` | `key, from, to` (`from` may be `"requests"`) |
 | `CONV_DELETED` | `key` |
 | `CONV_RENAMED` | `oldKey, newKey` – same player, the server's spelling (or merged duplicates) |
+| `SAVED_CHANGED` | `convKey` – a message was saved or removed |
+| `MESSAGE_CONTEXT` | `key, msg` – right-click on a message in the conversation view |
 | `CONV_OPENED` | `key, conv, firstUnread` – shown in the window |
 | `MESSAGE_ADDED` | `key, msg, conv` |
 | `UNREAD_CHANGED` | – |

@@ -156,3 +156,9 @@
 ## 0.1.13 – 2026-09-27
 - Settings → Storage: messages per chat (50/100/200/500), delete group chats after N days (default 14), delete inactive whisper chats after N days (default off), usage stats and "Clean up now". Rules run once at login; pinned chats, unread chats, active groups and chats protected by modules are never removed.
 - Module API: `Hush.AddRetentionGuard(fn, owner)`.
+
+## 0.1.14 – 2026-09-27
+- Saved messages: right-click a message → **Save message** (or Remove from saved). Saved messages are independent copies in the new **Saved** tab, one entry per person/group, shown like a conversation with dates. They survive deleting the conversation and the storage cleanup. Saved messages are marked with a thin accent bar and "Saved" next to the time.
+- Right-click a message → **Copy text** (links as plain "[Name]", ready for Ctrl+C).
+- Saved tab: right-click an entry for "Open conversation" and "Delete all saved".
+- Events `SAVED_CHANGED`, `MESSAGE_CONTEXT`.

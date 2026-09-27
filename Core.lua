@@ -176,6 +176,7 @@ local function initCharDB()
         Hush.db.chars[key] = char
     end
     char.convs = char.convs or {}
+    char.saved = char.saved or {} -- saved messages, see Saved.lua
 
     local cats = char.categories
     if not cats then
