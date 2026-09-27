@@ -3,7 +3,7 @@
 ## Notes: Modern whisper messenger for WoW Forever
 ## Version: 0.1.23
 ## SavedVariables: HushDB
-## IconTexture: Interface\Icons\Spell_Holy_Silence
+## IconTexture: Interface\AddOns\Hush\Media\logo
 
 Core.lua
 Compat.lua
