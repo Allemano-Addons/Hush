@@ -88,12 +88,46 @@ local function collect()
     local searching = query ~= ""
     local y = TOP_PAD
 
-    local function addConv(key, conv, catId)
-        items[#items + 1] = { kind = "conv", key = key, conv = conv, catId = catId, y = y, h = S.chatRowH }
+    local function addConv(key, conv, catId, charKey)
+        items[#items + 1] = { kind = "conv", key = key, conv = conv, catId = catId, charKey = charKey, y = y, h = S.chatRowH }
         y = y + S.chatRowH
     end
 
-    if tab == "whispers" and Hush.settings.listMode == "recent" then
+    local view = Hush.Main.view or "current"
+    if view ~= "current" then
+        -- Another character, or all characters: read-only, pinned first, then newest first.
+        local sources = {}
+        if view == "all" then
+            sources = Data.Characters()
+        elseif Hush.db.chars[view] then
+            sources = { { key = view, char = Hush.db.chars[view], current = false } }
+        end
+        local pinned, rest = {}, {}
+        for _, c in ipairs(sources) do
+            local function add(k, conv)
+                if Data.TabOf(conv) ~= tab or not matches(conv, query) then return end
+                local e = {
+                    key = c.current and k or Data.ForeignKey(c.key, k), conv = conv, last = conv.last or 0,
+                    charKey = (view == "all" and not c.current) and c.key or nil,
+                }
+                local list = (tab == "whispers" and conv.pinned) and pinned or rest
+                list[#list + 1] = e
+            end
+            if tab == "saved" then
+                for k, src in pairs(c.char.saved or {}) do add("S|" .. k, src) end
+            else
+                for k, conv in pairs(c.char.convs or {}) do add(k, conv) end
+            end
+        end
+        sort(pinned, byLast)
+        sort(rest, byLast)
+        if #pinned > 0 then
+            items[#items + 1] = { kind = "cat", id = "pinned", cat = Hush.char.categories.byId.pinned, count = #pinned, unread = 0, y = y, h = S.categoryH }
+            y = y + S.categoryH
+            for _, e in ipairs(pinned) do addConv(e.key, e.conv, "pinned", e.charKey) end
+        end
+        for _, e in ipairs(rest) do addConv(e.key, e.conv, nil, e.charKey) end
+    elseif tab == "whispers" and Hush.settings.listMode == "recent" then
         -- Recent: pinned first, then everything newest first regardless of category.
         local pinned, recent = {}, {}
         for key, conv in pairs(Data.All()) do
@@ -254,7 +288,13 @@ local function fillRow(r, it)
     local nr, ng, nb = List.NameColor(conv)
     r.initial:SetText(initial(conv.display))
     r.initial:SetTextColor(nr, ng, nb)
-    r.name:SetText(conv.display)
+    -- All characters: rows from other characters carry a small tag.
+    local tagChar = it.charKey and Hush.db.chars[it.charKey]
+    if tagChar then
+        r.name:SetText(conv.display .. "  |cff7c858f· " .. (tagChar.name or it.charKey) .. "|r")
+    else
+        r.name:SetText(conv.display)
+    end
     r.name:SetTextColor(nr, ng, nb)
 
     local dr, dg, db = List.StatusColor(conv)
@@ -461,7 +501,7 @@ local function finishDrag()
 end
 
 function List.StartDrag(key)
-    if Hush.Main.activeTab ~= "whispers" or (Hush.Main.search or "") ~= "" then return end
+    if Hush.Main.activeTab ~= "whispers" or (Hush.Main.search or "") ~= "" or Hush.Main.view ~= "current" then return end
     local conv = Data.Get(key)
     if not conv then return end
     if not ghost then buildDragFrames() end
@@ -557,3 +597,6 @@ end, "List")
 Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
     if key == "listMode" then offset = 0; List.Refresh() end
 end, "List")
+
+Hush:RegisterCallback("VIEW_CHANGED", function() offset = 0; List.Refresh() end, "List")
+Hush:RegisterCallback("CHARACTERS_CHANGED", function() List.Refresh() end, "List")

@@ -37,6 +37,8 @@ Use the `READY` event for work that needs conversations.
 
 ## Conversations
 
+Other characters (alts) use read-only keys `@<Name-Realm>|<key>` (e.g. `-Beta|W:Sigrid`); `Hush.GetConversation` reads them, while changes (move, pin, module data) are ignored for them.
+
 Keys: `W:<name>` whisper (name via `Ambiguate(name, "none")`), `B:<BattleTag>` Battle.net,
 `G:party:<time>` / `G:raid:<time>` group chat.
 
@@ -134,6 +136,8 @@ Getters are called every time the page is shown.
 | `CONV_DELETED` | `key` |
 | `CONV_RENAMED` | `oldKey, newKey` – same player, the server's spelling (or merged duplicates) |
 | `SAVED_CHANGED` | `convKey` – a message was saved or removed |
+| `VIEW_CHANGED` | `view` – `"current"`, `"all"` or a character key (alt) |
+| `CHARACTERS_CHANGED` | – a character was forgotten |
 | `MESSAGE_CONTEXT` | `key, msg` – right-click on a message in the conversation view |
 | `CONV_OPENED` | `key, conv, firstUnread` – shown in the window |
 | `MESSAGE_ADDED` | `key, msg, conv` |

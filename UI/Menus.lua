@@ -22,6 +22,13 @@ Menus.extraChatItems = {}
 function Menus.ChatItems(key)
     local conv = Data.Get(key)
     if not conv then return {} end
+    -- Other characters: read-only, only "Reply as <you>".
+    if Data.IsForeign(key) then
+        if conv.kind == "whisper" or conv.kind == "bnet" then
+            return { { text = "Reply as " .. (UnitName("player") or "me"), onClick = function() Hush.Input.ReplyAs(key) end } }
+        end
+        return {}
+    end
     if conv.kind == "saved" then return savedSourceItems(key, conv) end
     local items = {}
 
@@ -102,7 +109,8 @@ end
 
 function Menus.OpenChat(key)
     if Hush.List.IsDragging() then return end
-    W.OpenMenu(Menus.ChatItems(key))
+    local items = Menus.ChatItems(key)
+    if #items > 0 then W.OpenMenu(items) end
 end
 
 -- ---------------------------------------------------------------------------
@@ -152,9 +160,10 @@ Hush:RegisterCallback("MESSAGE_CONTEXT", function(_, key, msg)
     local conv = key and Data.Get(key)
     if not conv or not msg then return end
     local items = {}
-    if conv.kind == "saved" then
+    local foreign = Data.IsForeign(key) -- another character: copy only
+    if not foreign and conv.kind == "saved" then
         items[#items + 1] = { text = "Remove from saved", onClick = function() Hush.Saved.Remove(conv.convKey, msg) end }
-    elseif msg.d ~= "sys" then
+    elseif not foreign and msg.d ~= "sys" then
         if msg.saved then
             items[#items + 1] = { text = "Remove from saved", onClick = function() Hush.Saved.Remove(key, msg) end }
         else

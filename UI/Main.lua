@@ -199,9 +199,19 @@ local function buildSidebar()
     Main.LayoutTitleButtons()
 
     -- Search
+    -- Character selector: only shown when more than one character has Hush data.
+    local charRow = CreateFrame("Frame", nil, side)
+    charRow:SetPoint("TOPLEFT", title, "BOTTOMLEFT", S.padding, 0)
+    charRow:SetPoint("TOPRIGHT", title, "BOTTOMRIGHT", -S.padding, 0)
+    charRow:SetHeight(1)
+    charRow.dd = W.Dropdown(charRow, S.sidebarW - S.padding * 2, Main.ViewOptions, function(v) Main.SetView(v) end)
+    charRow.dd:SetPoint("TOPLEFT")
+    charRow.dd:Hide()
+    frame.charRow = charRow
+
     local search = W.EditBox(side, "Search", S.searchH)
-    search:SetPoint("TOPLEFT", title, "BOTTOMLEFT", S.padding, 0)
-    search:SetPoint("TOPRIGHT", title, "BOTTOMRIGHT", -S.padding, 0)
+    search:SetPoint("TOPLEFT", charRow, "BOTTOMLEFT", 0, 0)
+    search:SetPoint("TOPRIGHT", charRow, "BOTTOMRIGHT", 0, 0)
     search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
     search:HookScript("OnTextChanged", function(self)
         local text = strtrim(self:GetText() or "")
@@ -362,6 +372,65 @@ local function build()
 end
 
 -- ---------------------------------------------------------------------------
+-- Character view (alts): "current", "all", or another character's key.
+-- ---------------------------------------------------------------------------
+
+Main.view = "current"
+
+local function colored(char, text)
+    local r, g, b = Hush.Compat.ClassColor(char and char.class)
+    if not r then return text end
+    return ("|cff%02x%02x%02x%s|r"):format(floor(r * 255 + 0.5), floor(g * 255 + 0.5), floor(b * 255 + 0.5), text)
+end
+
+-- Short label for a character: its name, plus the realm when it differs from yours.
+function Main.CharLabel(charKey, char)
+    char = char or Hush.db.chars[charKey]
+    local name = char and char.name or (charKey:match("^[^%-]+") or charKey)
+    local realm = char and char.realm
+    local label = colored(char, name)
+    if realm and realm ~= Hush.Compat.PlayerRealm() then label = label .. " |cff7c858f- " .. realm .. "|r" end
+    return label
+end
+
+function Main.ViewOptions()
+    local opts = {}
+    for _, c in ipairs(Data.Characters()) do
+        if c.current then
+            opts[#opts + 1] = { value = "current", label = Main.CharLabel(c.key, c.char) .. "  |cff7c858f(you)|r" }
+            opts[#opts + 1] = { value = "all", label = "All characters" }
+        else
+            opts[#opts + 1] = { value = c.key, label = Main.CharLabel(c.key, c.char) }
+        end
+    end
+    return opts
+end
+
+function Main.RefreshCharRow()
+    if not frame then return end
+    local row = frame.charRow
+    local many = #Data.Characters() > 1
+    if not many and Main.view ~= "current" then Main.SetView("current") end
+    row:SetHeight(many and (26 + S.gap) or 1)
+    row.dd:SetShown(many)
+    if many then row.dd:Set(Main.view) end
+end
+
+function Main.SetView(view)
+    view = view or "current"
+    if view == Main.view then return end
+    Main.view = view
+    Hush.List.selected = nil
+    Hush.Conversation.Close()
+    Main.UpdateHeader(nil)
+    if frame then frame.charRow.dd:Set(view) end
+    Hush:Fire("VIEW_CHANGED", view)
+end
+
+Hush:RegisterCallback("WINDOW_BUILT", function() Main.RefreshCharRow() end, "Main")
+Hush:RegisterCallback("CHARACTERS_CHANGED", function() Main.RefreshCharRow() end, "Main")
+
+-- ---------------------------------------------------------------------------
 -- Public
 -- ---------------------------------------------------------------------------
 
@@ -448,7 +517,7 @@ local function updateHeaderButtons(header, key, conv)
                 hb.button:HookScript("OnLeave", function() W.HideTooltip() end)
             end
         end
-        local shown = conv ~= nil
+        local shown = conv ~= nil and not Data.IsForeign(key) -- other characters are read-only
         if shown and hb.def.isShown then
             local ok, res = pcall(hb.def.isShown, key, conv)
             shown = ok and res and true or false
@@ -519,7 +588,10 @@ function Main.UpdateHeader(key)
     updateChip(header, key, conv)
     header.title:SetText(conv.display)
     header.title:SetTextColor(Hush.List.NameColor(conv))
-    header.meta:SetText(infoLine(conv))
+    local line = infoLine(conv)
+    local charKey = Data.SplitCharKey(key)
+    if charKey then line = Main.CharLabel(charKey) .. "'s chat  ·  " .. line end
+    header.meta:SetText(line)
 
     -- Extra line from modules, shown like a quote under the info line.
     local extras = {}

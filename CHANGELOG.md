@@ -171,3 +171,10 @@
 
 ## 0.1.16 – 2026-09-27
 - Popup: if the newest line is a system reply (player not found, AFK, DND) it is shown in the popup in the same color as in Hush, so it is clear why a reply did not arrive.
+
+## 0.1.17 – 2026-09-27
+- **Alt characters**: a character selector under the title (only when more than one character has Hush data) with your character, **All characters** and each alt in class color.
+- Other characters' chats are read-only (keys `@Name-Realm|...`): no input, no module buttons, only "Copy text" on messages. A bar offers **Reply as <you>**, which opens or starts the chat on the character you are playing; the alt's history stays where it is.
+- **All characters** lists every chat from all characters, newest first, with a small character tag, and search covers them all – the Saved tab too.
+- Storage cleanup now runs over all characters at login, and the usage numbers cover all of them. Settings → Storage → Other characters shows each alt's chats, messages and last login, with **Forget** (deletes that character's Hush history).
+- Events `VIEW_CHANGED`, `CHARACTERS_CHANGED`.

@@ -12,7 +12,7 @@ local QUICK_H = 22
 local FOOTER_H = 12 + QUICK_H + 8 + S.inputH + 12
 local MAX_QUICK_LABEL = 22
 
-local footer, edit, sendBtn, quickBar, counter
+local footer, edit, sendBtn, quickBar, counter, readOnly
 local quickButtons = {}
 local compose -- "new message" name field in the header
 
@@ -147,7 +147,46 @@ local function build()
     counter = W.Text(footer, "regular", -2, "textFaint")
     counter:SetPoint("BOTTOMRIGHT", edit, "TOPRIGHT", 0, 3)
 
+    -- Read-only bar for other characters' chats: "Reply as <you>".
+    readOnly = CreateFrame("Frame", nil, footer)
+    readOnly:SetAllPoints()
+    readOnly.text = W.Text(readOnly, "regular", -1, "textDim")
+    readOnly.text:SetPoint("LEFT", PAD_X, 0)
+    readOnly.button = W.Button(readOnly, "Reply as", "accent", function()
+        if readOnly.key then Input.ReplyAs(readOnly.key) end
+    end)
+    readOnly.button:SetHeight(28)
+    readOnly.button:SetPoint("RIGHT", -PAD_X, 0)
+    readOnly:Hide()
+
     footer:Hide()
+end
+
+-- Show the normal input, or the read-only bar.
+local function setReadOnly(on)
+    quickBar:SetShown(not on)
+    edit:SetShown(not on)
+    sendBtn:SetShown(not on)
+    counter:SetShown(not on)
+    readOnly:SetShown(on)
+end
+
+-- Continue a chat from another character as the one you are playing. The alt's
+-- history stays where it is (All characters / its own view).
+function Input.ReplyAs(foreignKey)
+    local conv = Data.Get(foreignKey)
+    if not conv then return end
+    Hush.Main.SetView("current")
+    if conv.kind == "bnet" then
+        local key = Data.BNetKey(conv.target)
+        if not Data.Get(key) then
+            Data.Ensure(key, { kind = "bnet", target = conv.target, display = conv.display, info = { class = conv.info and conv.info.class } })
+        end
+        Hush.List.Select(key)
+        edit:SetFocus()
+    else
+        Input.StartConversation(conv.target)
+    end
 end
 
 -- "New message": a name field over the header.
@@ -247,13 +286,28 @@ Hush:RegisterCallback("CONV_OPENED", function(_, key, conv)
         drafts[key] = nil
         updateCounter()
     end
+    if compose then compose:Hide() end
+    -- Another character: read-only bar with "Reply as <you>" (not for group chats or saved).
+    if Data.IsForeign(key) then
+        local charKey = Data.SplitCharKey(key)
+        local canReply = conv.kind == "whisper" or conv.kind == "bnet"
+        readOnly.key = key
+        readOnly.text:SetText(Hush.Main.CharLabel(charKey) .. "'s chat is read-only.")
+        readOnly.button.text:SetText("Reply as " .. (UnitName("player") or "me"))
+        readOnly.button:SetWidth(readOnly.button.text:GetStringWidth() + 28)
+        readOnly.button:SetShown(canReply)
+        setReadOnly(true)
+        footer:SetHeight(52)
+        footer:Show()
+        return
+    end
     -- Saved messages are read-only: no input.
     if conv.kind == "saved" then
         footer:Hide()
         footer:SetHeight(1)
-        if compose then compose:Hide() end
         return
     end
+    setReadOnly(false)
     footer:SetHeight(FOOTER_H)
     footer:Show()
     if conv.kind == "group" then
@@ -288,3 +342,11 @@ Hush:RegisterCallback("NEW_MESSAGE", function()
 end, "Input")
 
 Hush:RegisterCallback("QUICK_REPLIES_CHANGED", function() layoutQuick() end, "Input")
+
+-- Switching character view closes the open conversation, and with it the input.
+Hush:RegisterCallback("VIEW_CHANGED", function()
+    if footer then
+        footer:Hide()
+        footer:SetHeight(1)
+    end
+end, "Input")

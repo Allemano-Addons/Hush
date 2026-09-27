@@ -18,11 +18,55 @@ local PREVIEW_LEN = 80
 function Data.WhisperKey(name) return "W:" .. name end
 function Data.BNetKey(tag) return "B:" .. tag end
 
+-- ---------------------------------------------------------------------------
+-- Characters (alts). Other characters' chats are read-only and use keys like
+-- "@Kogosh-Realm|W:Sigrid". Plain keys always mean the character you are playing.
+-- ---------------------------------------------------------------------------
+
+function Data.ForeignKey(charKey, key) return "@" .. charKey .. "|" .. key end
+
+-- charKey, innerKey for a foreign key; nil for a plain key.
+function Data.SplitCharKey(key)
+    if type(key) ~= "string" or key:sub(1, 1) ~= "@" then return nil end
+    return key:match("^@([^|]+)|(.+)$")
+end
+
+function Data.IsForeign(key) return Data.SplitCharKey(key) ~= nil end
+
+-- The character data a key belongs to.
+function Data.CharOf(key)
+    local charKey = Data.SplitCharKey(key)
+    if charKey then return Hush.db.chars[charKey], charKey end
+    return Hush.char, Hush.charKey
+end
+
+-- All characters with Hush data: { { key, char, current }, ... }, current first, then by name.
+function Data.Characters()
+    local list = {}
+    for charKey, char in pairs(Hush.db and Hush.db.chars or {}) do
+        list[#list + 1] = { key = charKey, char = char, current = charKey == Hush.charKey }
+    end
+    sort(list, function(a, b)
+        if a.current ~= b.current then return a.current end
+        return a.key < b.key
+    end)
+    return list
+end
+
 function Data.Get(key)
     if not Hush.char then return nil end
+    local charKey, inner = Data.SplitCharKey(key)
+    local char = Hush.char
+    if charKey then
+        char = Hush.db.chars[charKey]
+        if not char then return nil end
+        key = inner
+    end
     -- Saved-message sources ("S|...") look like conversations to the UI.
-    if Hush.Saved and Hush.Saved.IsSavedKey(key) then return Hush.Saved.Get(key) end
-    return Hush.char.convs[key]
+    if Hush.Saved and Hush.Saved.IsSavedKey(key) then
+        return char.saved and char.saved[key:sub(3)]
+    end
+    return char.convs[key]
 end
 
 function Data.All()
@@ -183,6 +227,7 @@ function Data.AddMessage(key, msg)
 end
 
 function Data.MarkRead(key, silent)
+    if Data.IsForeign(key) then return nil end -- other characters are read-only
     local conv = Data.Get(key)
     if not conv or (conv.unread == 0 and not conv.firstUnread) then return end
     conv.unread = 0
@@ -193,6 +238,7 @@ end
 
 -- Move to a category. Also accepts a request.
 function Data.Move(key, categoryId)
+    if Data.IsForeign(key) then return nil end -- other characters are read-only
     local conv = Data.Get(key)
     if not conv or not categoryExists(categoryId) then return false end
     local from = conv.request and "requests" or conv.category
@@ -203,6 +249,7 @@ function Data.Move(key, categoryId)
 end
 
 function Data.SetPinned(key, pinned)
+    if Data.IsForeign(key) then return nil end -- other characters are read-only
     local conv = Data.Get(key)
     if not conv then return end
     conv.pinned = pinned and true or false
@@ -210,6 +257,7 @@ function Data.SetPinned(key, pinned)
 end
 
 function Data.Delete(key)
+    if Data.IsForeign(key) then return nil end -- other characters are read-only
     local conv = Data.Get(key)
     if not conv then return end
     Hush.char.convs[key] = nil
@@ -326,39 +374,58 @@ end
 function Data.Cleanup(dryRun)
     local s = Hush.settings
     local now, limit = time(), maxMessages()
-    local remove, trimmed = {}, 0
-    for key, conv in pairs(Data.All()) do
-        local days = conv.kind == "group" and s.groupRetentionDays or s.whisperRetentionDays
-        local old = days and days > 0 and (now - (conv.last or 0)) > days * 86400
-        local active = conv.kind == "group" and Hush.Groups and Hush.Groups.IsActive(conv)
-        if old and not conv.pinned and conv.unread == 0 and not active and not guarded(key, conv) then
-            remove[#remove + 1] = key
-        elseif #conv.msgs > limit then
-            trimmed = trimmed + (#conv.msgs - limit)
-            if not dryRun then
-                -- Drop the oldest in one pass.
-                local keep = {}
-                for i = #conv.msgs - limit + 1, #conv.msgs do keep[#keep + 1] = conv.msgs[i] end
-                conv.msgs = keep
-                if conv.firstUnread and conv.firstUnread < keep[1].n then conv.firstUnread = keep[1].n end
+    local removed, trimmed = 0, 0
+    -- Every character: the saved file (and loading time) holds all of them.
+    for charKey, char in pairs(Hush.db.chars) do
+        local current = charKey == Hush.charKey
+        local remove = {}
+        for key, conv in pairs(char.convs or {}) do
+            local days = conv.kind == "group" and s.groupRetentionDays or s.whisperRetentionDays
+            local old = days and days > 0 and (now - (conv.last or 0)) > days * 86400
+            local active = current and conv.kind == "group" and Hush.Groups and Hush.Groups.IsActive(conv)
+            local guardKey = current and key or Data.ForeignKey(charKey, key)
+            if old and not conv.pinned and (conv.unread or 0) == 0 and not active and not guarded(guardKey, conv) then
+                remove[#remove + 1] = key
+            elseif #conv.msgs > limit then
+                trimmed = trimmed + (#conv.msgs - limit)
+                if not dryRun then
+                    -- Drop the oldest in one pass.
+                    local keep = {}
+                    for i = #conv.msgs - limit + 1, #conv.msgs do keep[#keep + 1] = conv.msgs[i] end
+                    conv.msgs = keep
+                    if conv.firstUnread and conv.firstUnread < keep[1].n then conv.firstUnread = keep[1].n end
+                end
+            end
+        end
+        removed = removed + #remove
+        if not dryRun then
+            for _, key in ipairs(remove) do
+                if current then Data.Delete(key) else char.convs[key] = nil end
             end
         end
     end
-    if not dryRun then
-        for _, key in ipairs(remove) do Data.Delete(key) end
-    end
-    return #remove, trimmed
+    return removed, trimmed
 end
 
--- Numbers for Settings → Storage. Size is an estimate of the saved file.
+-- Numbers for Settings → Storage, over all characters. Size estimates the saved file.
 function Data.Stats()
-    local chats, msgs = 0, 0
-    for _, conv in pairs(Data.All()) do
-        chats = chats + 1
-        msgs = msgs + #conv.msgs
+    local chats, msgs, saved = 0, 0, 0
+    for _, char in pairs(Hush.db.chars) do
+        for _, conv in pairs(char.convs or {}) do
+            chats = chats + 1
+            msgs = msgs + #conv.msgs
+        end
+        for _, src in pairs(char.saved or {}) do saved = saved + #src.msgs end
     end
-    local saved = Hush.Saved and Hush.Saved.Count() or 0
     return chats, msgs, saved, (msgs + saved) * 270 + chats * 600
+end
+
+-- Remove another character's Hush data (not the one you are playing).
+function Data.ForgetCharacter(charKey)
+    if charKey == Hush.charKey then return false end
+    Hush.db.chars[charKey] = nil
+    Hush:Fire("CHARACTERS_CHANGED")
+    return true
 end
 
 -- Deletes every conversation of this character. Categories and settings are kept.
@@ -372,6 +439,7 @@ end
 
 -- Module data per conversation: Data.ModData(key, "Hush_Recruit") -> table (created on demand).
 function Data.ModData(key, module)
+    if Data.IsForeign(key) then return nil end -- other characters are read-only
     local conv = Data.Get(key)
     if not conv then return nil end
     conv.mod = conv.mod or {}

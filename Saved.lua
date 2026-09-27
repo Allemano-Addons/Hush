@@ -45,6 +45,7 @@ function Saved.IsSaved(msg) return msg ~= nil and msg.saved == true end
 
 -- Save a message from a conversation.
 function Saved.Add(convKey, msg)
+    if Hush.Data.IsForeign(convKey) then return false end -- other characters are read-only
     local conv = Hush.Data.Get(convKey)
     if not conv or not msg or msg.d == "sys" then return false end
     local all = Hush.char.saved
@@ -70,6 +71,7 @@ end
 
 -- Remove one saved message (a copy from src.msgs, or the original conversation message).
 function Saved.Remove(convKey, msg)
+    if Hush.Data.IsForeign(convKey) then return end
     local src = store()[convKey]
     if not src then return end
     for i = #src.msgs, 1, -1 do
@@ -92,6 +94,7 @@ function Saved.Remove(convKey, msg)
 end
 
 function Saved.RemoveAll(convKey)
+    if Hush.Data.IsForeign(convKey) then return end
     local src = store()[convKey]
     if not src then return end
     local conv = Hush.Data.Get(convKey)

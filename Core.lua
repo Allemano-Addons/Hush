@@ -187,6 +187,12 @@ local function initCharDB()
     end
     char.convs = char.convs or {}
     char.saved = char.saved or {} -- saved messages, see Saved.lua
+    -- Who this is, for the character selector (alts).
+    char.name = UnitName("player")
+    char.realm = Hush.Compat.PlayerRealm()
+    char.class = select(2, UnitClass("player"))
+    char.lastLogin = time()
+    Hush.charKey = key
 
     local cats = char.categories
     if not cats then

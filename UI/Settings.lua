@@ -313,7 +313,7 @@ local function buildStorage(p)
         return function()
             local chats, msgs, saved, bytes = Data.Stats()
             local size = bytes >= 1048576 and ("%.1f MB"):format(bytes / 1048576) or ("%d KB"):format(ceil(bytes / 1024))
-            fs:SetText(("%d chats  ·  %d messages  ·  %d saved  ·  about %s on disk"):format(chats, msgs, saved, size))
+            fs:SetText(("%d chats  ·  %d messages  ·  %d saved  ·  about %s on disk (all characters)"):format(chats, msgs, saved, size))
         end
     end)
     p:Button("Clean up now", "Apply the rules above right away.", "Clean up", "default", function()
@@ -333,6 +333,60 @@ local function buildStorage(p)
             end,
         })
     end)
+    -- Other characters' history (alts): size and "Forget".
+    local others = {}
+    for _, c in ipairs(Data.Characters()) do
+        if not c.current then others[#others + 1] = c end
+    end
+    if #others > 0 then
+        p:Header("Other characters")
+        local shown = min(#others, 6)
+        p:Custom(shown * 30, function(c)
+            local rows = {}
+            for i = 1, shown do
+                local info = others[i]
+                local row = CreateFrame("Frame", nil, c)
+                row:SetPoint("TOPLEFT", 0, -(i - 1) * 30)
+                row:SetPoint("TOPRIGHT", 0, -(i - 1) * 30)
+                row:SetHeight(28)
+                row.label = W.Text(row, "semibold", 0, "text")
+                row.label:SetPoint("LEFT")
+                row.stats = W.Text(row, "regular", -1, "textFaint")
+                row.stats:SetPoint("LEFT", row.label, "RIGHT", 10, 0)
+                row.forget = W.Button(row, "Forget", "ghost", function()
+                    W.Dialog(frame, {
+                        title = "Forget character",
+                        text = "Delete all Hush history (chats, categories, saved messages) of "
+                            .. (info.char.name or info.key) .. "? This cannot be undone.",
+                        okText = "Forget",
+                        danger = true,
+                        onOk = function()
+                            Data.ForgetCharacter(info.key)
+                            row:Hide()
+                            p:Refresh()
+                        end,
+                    })
+                end)
+                row.forget:SetPoint("RIGHT")
+                row.forget.text:SetTextColor(Theme:Color("danger"))
+                row.forget:SetScript("OnLeave", function(self) self.text:SetTextColor(Theme:Color("danger")) end)
+                row.info = info
+                rows[i] = row
+            end
+            return function()
+                for _, row in ipairs(rows) do
+                    local char = Hush.db.chars[row.info.key]
+                    if char then
+                        local chats, msgs = 0, 0
+                        for _, conv in pairs(char.convs or {}) do chats = chats + 1; msgs = msgs + #conv.msgs end
+                        row.label:SetText(Hush.Main.CharLabel(row.info.key, char))
+                        local seen = char.lastLogin and ("last played " .. date("%d/%m/%Y", char.lastLogin)) or ""
+                        row.stats:SetText(("%d chats · %d messages · %s"):format(chats, msgs, seen))
+                    end
+                end
+            end
+        end)
+    end
 end
 
 -- ---------------------------------------------------------------------------
