@@ -37,7 +37,7 @@ Use the `READY` event for work that needs conversations.
 
 ## Conversations
 
-Other characters (alts) use read-only keys `@<Name-Realm>|<key>` (e.g. `-Beta|W:Sigrid`); `Hush.GetConversation` reads them, while changes (move, pin, module data) are ignored for them.
+Other characters (alts) use read-only keys `@<Name-Realm>|<key>` (e.g. `@Kogosh-Beta|W:Sigrid`); `Hush.GetConversation` reads them, while changes (move, pin, module data) are ignored for them.
 
 Keys: `W:<name>` whisper (name via `Ambiguate(name, "none")`), `B:<BattleTag>` Battle.net,
 `G:party:<time>` / `G:raid:<time>` group chat.
