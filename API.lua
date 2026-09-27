@@ -58,11 +58,12 @@ function API.Open(key, focus)
 end
 
 -- Open (or start) a whisper conversation with a character by name, with focus in the input.
-function API.OpenWhisper(name)
+-- text (optional): a draft put in the empty input, ready to edit and send (never sent by itself).
+function API.OpenWhisper(name, text)
     if not name or name == "" then return end
     Hush.Main.Show()
     Hush.Main.SetView("current")
-    Hush.Input.StartConversation(name)
+    Hush.Input.StartConversation(name, text)
 end
 
 -- Open Hush on the latest incoming whisper with focus in the input (key binding HUSH_REPLY).
@@ -263,6 +264,8 @@ function API.IsGuildMember(name) return Hush.Chat.IsGuildMember(Hush.Compat.Norm
 function API.CanGuildInvite() return Hush.Compat.CanGuildInvite() end
 function API.GuildInvite(name) Hush.Compat.GuildInvite(name) end
 function API.InviteToGroup(name) Hush.Compat.InviteToGroup(name) end
+-- Ask a group leader for an invite. Returns false when the client can't.
+function API.RequestInvite(name) return Hush.Compat.RequestInvite(name) end
 
 -- Open the settings, optionally on a page id.
 function API.OpenSettings(id)

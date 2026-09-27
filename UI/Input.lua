@@ -226,8 +226,16 @@ local function buildCompose()
     compose:Hide()
 end
 
+-- draft (optional): text put in the input, only when it is empty (never sent by itself).
+local function putDraft(draft)
+    if draft and draft ~= "" and (edit:GetText() or "") == "" then
+        edit:SetText(draft)
+        edit:SetCursorPosition(#draft)
+    end
+end
+
 -- Open (or create) a whisper conversation with a character and focus the input.
-function Input.StartConversation(name)
+function Input.StartConversation(name, draft)
     -- "sigrid" -> "Sigrid" (realm part untouched).
     local char, realm = strsplit("-", name, 2)
     -- "whissel ljud" -> "Whissel Ljud": capitalize every part of the name (surnames on WoW Forever).
@@ -240,6 +248,7 @@ function Input.StartConversation(name)
     for key, conv in pairs(Data.All()) do
         if conv.kind == "whisper" and strlower(conv.target) == lname then
             Hush.List.Select(key)
+            putDraft(draft)
             edit:SetFocus()
             return
         end
@@ -247,6 +256,7 @@ function Input.StartConversation(name)
     local key = Data.WhisperKey(name)
     Data.Ensure(key, { kind = "whisper", target = name, display = name, info = Hush.Chat.LookupInfo(name) })
     Hush.List.Select(key)
+    putDraft(draft)
     edit:SetFocus()
 end
 

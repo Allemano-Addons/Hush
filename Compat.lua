@@ -242,6 +242,16 @@ function Compat.InviteToGroup(name)
     end
 end
 
+-- Ask a group leader for an invite (the classic Group Finder's "Request Invite").
+-- Returns false when the client has no such call.
+function Compat.RequestInvite(name)
+    if C_PartyInfo and C_PartyInfo.RequestInviteFromUnit then
+        C_PartyInfo.RequestInviteFromUnit(name)
+        return true
+    end
+    return false
+end
+
 function Compat.CanGuildInvite()
     return IsInGuild() and CanGuildInvite ~= nil and CanGuildInvite() and true or false
 end

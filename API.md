@@ -34,7 +34,7 @@ Use the `READY` event for work that needs conversations.
 | `Hush.Open(key, focus)` | Open the window on a conversation; `focus` puts the cursor in the input. |
 | `Hush.ReplyLast()` | Open the latest incoming whisper with focus. |
 | `Hush.GetOpenConversation()` | Key of the conversation shown, or `nil`. |
-| `Hush.OpenWhisper(name)` | Open or start a whisper conversation by character name, with focus in the input. |
+| `Hush.OpenWhisper(name [, text])` | Open or start a whisper conversation by character name, with focus in the input. `text`: a draft put in the empty input (never sent by itself). |
 
 ## Conversations
 
@@ -110,6 +110,7 @@ Built-in ids: `pinned` (virtual), `guild`, `recruits`, `other`.
 | `Hush.IsGuildMember(name)` | From the cached guild roster. |
 | `Hush.CanGuildInvite()` / `Hush.GuildInvite(name)` | Guild invites are **protected** on WoW Forever: calling `GuildInvite` from addon code is blocked. Use a chat menu item with `macro = "/ginvite " .. name` instead (Hush already has "Guild invite" in the chat menu). |
 | `Hush.InviteToGroup(name)` | |
+| `Hush.RequestInvite(name)` | Ask a group leader for an invite. Returns false when the client can't. |
 | `Hush.ShowDialog(opts)` | Confirm or text prompt inside the Hush window. `opts = { title, text, input, okText, danger, onOk = fn(value), maxLetters (default 40), allowEmpty }` |
 
 Page builder (`page` in `build`), rows are stacked top to bottom:

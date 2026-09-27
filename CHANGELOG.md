@@ -220,3 +220,6 @@ Found with `/hush report`:
 
 ## 0.1.27 – 2026-09-27
 - Module API: `Hush.OpenWhisper(name)`; new title-button icon `list` (for Hush Feed).
+
+## 0.1.28 – 2026-09-27
+- Module API: `Hush.OpenWhisper(name, text)` puts a draft in the empty input (for Hush LFG's "Ask to join"; never sent by itself), `Hush.RequestInvite(name)` asks a group leader for an invite.
