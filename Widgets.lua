@@ -1155,3 +1155,65 @@ function W.SetResizeBounds(frame, minW, minH, maxW, maxH)
 end
 
 Compat.features.CreateLine = UIParent.CreateLine ~= nil
+
+-- ---------------------------------------------------------------------------
+-- Copy box: a window with multi-line, pre-selected text to copy (Ctrl+C), e.g. /hush report.
+-- ---------------------------------------------------------------------------
+
+local copyBox
+function W.CopyBox(title, text)
+    if not copyBox then
+        local f = CreateFrame("Frame", nil, UIParent)
+        f:SetSize(560, 380)
+        f:SetPoint("CENTER", 0, 40)
+        f:SetFrameStrata("DIALOG")
+        f:SetClampedToScreen(true)
+        f:EnableMouse(true)
+        f.bg = W.Fill(f, "window", 0.98)
+        f.bg:SetAllPoints()
+        f.border = W.Border(f, "line")
+        f.title = W.Text(f, "heading", 2, "text")
+        f.title:SetPoint("TOPLEFT", 16, -16)
+        f.hint = W.Text(f, "regular", -1, "textFaint")
+        f.hint:SetPoint("TOPLEFT", f.title, "BOTTOMLEFT", 0, -6)
+        f.hint:SetText("Press Ctrl+C to copy, then Esc to close.")
+        f.close = W.IconButton(f, "close", 24, "Close", function() f:Hide() end, "x")
+        f.close:SetPoint("TOPRIGHT", -8, -8)
+
+        local box = CreateFrame("Frame", nil, f)
+        box:SetPoint("TOPLEFT", 16, -60)
+        box:SetPoint("BOTTOMRIGHT", -16, 16)
+        box.bg = W.Fill(box, "field", 1)
+        box.bg:SetAllPoints()
+        W.Border(box, "line")
+        local scroll = CreateFrame("ScrollFrame", nil, box)
+        scroll:SetPoint("TOPLEFT", 8, -8)
+        scroll:SetPoint("BOTTOMRIGHT", -8, 8)
+        local e = CreateFrame("EditBox", nil, scroll)
+        e:SetMultiLine(true)
+        e:SetAutoFocus(false)
+        e:SetWidth(560 - 32 - 16)
+        Theme:SetFont(e, "regular", -1)
+        e:SetTextColor(Theme:Color("text"))
+        scroll:SetScrollChild(e)
+        scroll:EnableMouseWheel(true)
+        scroll:SetScript("OnMouseWheel", function(self, delta)
+            local maxScroll = max(0, e:GetHeight() - self:GetHeight())
+            self:SetVerticalScroll(min(maxScroll, max(0, self:GetVerticalScroll() - delta * 20)))
+        end)
+        e:SetScript("OnEscapePressed", function() f:Hide() end)
+        -- Read-only: typing restores the text.
+        e:SetScript("OnTextChanged", function(self, userInput)
+            if userInput and f.text then self:SetText(f.text) self:HighlightText() end
+        end)
+        f.edit = e
+        W.SkinPanel(f, { kind = "dialog", hide = { f.bg }, borders = { f.border }, title = f.title })
+        copyBox = f
+    end
+    copyBox.title:SetText(strupper(title or ""))
+    copyBox.text = text
+    copyBox.edit:SetText(text or "")
+    copyBox:Show()
+    copyBox.edit:SetFocus()
+    copyBox.edit:HighlightText()
+end

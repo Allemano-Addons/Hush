@@ -154,6 +154,9 @@ local function buildGeneral(p)
     p:Header("Window")
     p:Button("Window position and size", "Move the Hush window back to the center at 1000×620.", "Reset", "default",
         function() Hush.Main.ResetPosition() end)
+    p:Header("Help")
+    p:Button("Report a problem", "Copies version, settings and recent errors for a bug report.", "Report", "default",
+        function() Hush.OpenReport() end)
     p:Header("About")
     p:Text("Hush " .. tostring(Hush.version) .. " for WoW Forever.  /hush opens and closes the window, /hush help lists all commands. "
         .. "Key bindings: Key Bindings > AddOns > Hush.")

@@ -369,3 +369,16 @@ function Compat.GetPhysicalScreenSize()
     end
     return 1920, 1080
 end
+
+-- Names of the addons that are loaded right now (for /hush report).
+function Compat.LoadedAddOns()
+    local names = {}
+    local A = C_AddOns
+    local num = (A and A.GetNumAddOns and A.GetNumAddOns()) or (GetNumAddOns and GetNumAddOns()) or 0
+    for i = 1, num do
+        local name = (A and A.GetAddOnInfo and A.GetAddOnInfo(i)) or (GetAddOnInfo and GetAddOnInfo(i))
+        local loaded = name and ((A and A.IsAddOnLoaded and A.IsAddOnLoaded(name)) or (IsAddOnLoaded and IsAddOnLoaded(name)))
+        if loaded then names[#names + 1] = name end
+    end
+    return names
+end

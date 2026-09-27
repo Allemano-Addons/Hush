@@ -190,6 +190,16 @@ local function systemFilter(_, _, text)
     return name ~= nil and Data.Get(Data.WhisperKey(name)) ~= nil and shouldHide()
 end
 
+-- A failing filter must never hide messages: on error the message is shown as usual.
+local function safeFilter(fn)
+    return function(...)
+        local ok, hide = pcall(fn, ...)
+        if ok then return hide end
+        Hush:RecordError("chat filter", hide)
+        return false
+    end
+end
+
 -- ---------------------------------------------------------------------------
 -- Setup
 -- ---------------------------------------------------------------------------
@@ -207,11 +217,11 @@ Hush:RegisterEvent("PLAYER_LOGIN", function()
 
     if Compat.features.ChatFilter then
         for _, e in ipairs({ "CHAT_MSG_WHISPER", "CHAT_MSG_WHISPER_INFORM", "CHAT_MSG_BN_WHISPER", "CHAT_MSG_BN_WHISPER_INFORM" }) do
-            ChatFrame_AddMessageEventFilter(e, whisperFilter)
+            ChatFrame_AddMessageEventFilter(e, safeFilter(whisperFilter))
         end
-        ChatFrame_AddMessageEventFilter("CHAT_MSG_AFK", autoReplyFilter)
-        ChatFrame_AddMessageEventFilter("CHAT_MSG_DND", autoReplyFilter)
-        ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", systemFilter)
+        ChatFrame_AddMessageEventFilter("CHAT_MSG_AFK", safeFilter(autoReplyFilter))
+        ChatFrame_AddMessageEventFilter("CHAT_MSG_DND", safeFilter(autoReplyFilter))
+        ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", safeFilter(systemFilter))
     end
 
     Compat.After(3, function() requestRoster(true) end)

@@ -203,3 +203,9 @@
 
 ## 0.1.23 – 2026-09-27
 - Fix: the theme "Reload" button still did nothing. Like EllesmereUI, the /reload button is now an `InsecureActionButtonTemplate` *inside* the dialog button (it moves and raises with it); before it floated above it, and the settings window raised itself over it on the press.
+
+## 0.1.24 – 2026-09-27
+- **Safety net**: every event handler, callback and slash command runs protected, so an error in one part never stops the others (whispers are always saved). The default-chat filters fall back to showing the message if they fail. The last 10 Hush errors are kept (also across reloads) and still go to the normal error display.
+- **`/hush report`** (also Settings > General > Report a problem): a window with version, client, locale, screen, theme and key settings, data counts, client features, loaded addons and recent Hush errors, pre-selected for Ctrl+C.
+- Addon list icon: own Hush logo (`Media/logo.tga`).
+- Dev: `/hush testerror`.

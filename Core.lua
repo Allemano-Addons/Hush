@@ -14,6 +14,20 @@ function Hush:Print(...)
 end
 
 -- ---------------------------------------------------------------------------
+-- Errors: recorded (last 10, kept in HushDB for /hush report) and still passed to the
+-- normal error display.
+-- ---------------------------------------------------------------------------
+
+Hush.errors = {}
+
+function Hush:RecordError(where, err)
+    local list = self.errors
+    list[#list + 1] = { t = time(), where = tostring(where), msg = tostring(err):sub(1, 400), v = self.version }
+    while #list > 10 do tremove(list, 1) end
+    geterrorhandler()(err)
+end
+
+-- ---------------------------------------------------------------------------
 -- Game events: several handlers per event, one shared frame.
 -- ---------------------------------------------------------------------------
 
@@ -42,11 +56,14 @@ function Hush:UnregisterEvent(event, handler)
     end
 end
 
+-- Each handler runs protected: an error in one part never stops the others (a whisper
+-- is always saved even if, say, a UI refresh fails).
 eventFrame:SetScript("OnEvent", function(_, event, ...)
     local list = eventHandlers[event]
     if not list then return end
     for i = 1, #list do
-        list[i](event, ...)
+        local ok, err = pcall(list[i], event, ...)
+        if not ok then Hush:RecordError(event, err) end
     end
 end)
 
@@ -79,7 +96,7 @@ function Hush:Fire(name, ...)
     if not list then return end
     for i = 1, #list do
         local ok, err = pcall(list[i].fn, name, ...)
-        if not ok then geterrorhandler()(err) end
+        if not ok then Hush:RecordError(name, err) end
     end
 end
 
@@ -174,6 +191,11 @@ local function initDB()
     db.toast = db.toast or {}
     db.popup = db.popup or {}
     db.chars = db.chars or {}
+    -- Errors from before the saved data was loaded are kept too.
+    db.errors = db.errors or {}
+    for _, e in ipairs(Hush.errors) do tinsert(db.errors, e) end
+    Hush.errors = db.errors
+    while #db.errors > 10 do tremove(db.errors, 1) end
 
     Hush.db = db
     Hush.settings = db.settings
@@ -267,6 +289,7 @@ local slashCommands, slashOrder = {}, {}
 local DEV_COMMANDS = {
     api = true, dump = true, fake = true, read = true, move = true, fakemany = true,
     clearfake = true, fakeconvo = true, fakegroup = true, toasttest = true,
+    testerror = true,
 }
 
 local function devMode() return Hush.db ~= nil and Hush.db.dev == true end
@@ -304,7 +327,8 @@ SlashCmdList.HUSH = function(msg)
     elseif c and c.dev and not devMode() then
         Hush:Print("/hush " .. cmd .. " is a dev command. Turn on dev mode with /hush dev")
     elseif c then
-        c.fn(rest)
+        local ok, err = pcall(c.fn, rest)
+        if not ok then Hush:RecordError("/hush " .. cmd, err) end
     else
         printHelp()
     end
@@ -326,3 +350,67 @@ Hush:AddSlashCommand("api", function(arg)
     sort(found)
     Hush:Print(name .. ":", #found > 0 and table.concat(found, ", ") or "(no matches)")
 end, "list API functions: /hush api <table> [filter]")
+
+-- ---------------------------------------------------------------------------
+-- /hush report: everything useful for a bug report, ready to copy.
+-- ---------------------------------------------------------------------------
+
+function Hush.BuildReport()
+    local C, T, D = Hush.Compat, Hush.Theme, Hush.Data
+    local s = Hush.settings or {}
+    local out = {}
+    local function add(fmt, ...) out[#out + 1] = select("#", ...) > 0 and fmt:format(...) or fmt end
+
+    local version, build, buildDate, interface = GetBuildInfo()
+    add("Hush report  %s", date("%Y-%m-%d %H:%M"))
+    local okR, recruit = pcall(C.GetAddOnMetadata, "Hush_Recruit", "Version")
+    if not okR then recruit = nil end
+    add("Hush %s%s", tostring(Hush.version), recruit and ("  +  Hush Recruit " .. recruit) or "")
+    add("Client %s (%s, %s), interface %s, locale %s", tostring(version), tostring(build), tostring(buildDate),
+        tostring(interface), tostring(GetLocale and GetLocale() or "?"))
+    add("Character %s, class %s", tostring(Hush.charKey), tostring(C.PlayerClass()))
+    local w, h = C.GetPhysicalScreenSize()
+    add("Screen %dx%d, UI scale %.3f", w, h, UIParent:GetEffectiveScale())
+    add("Fonts: %s | text %s | heading %s", tostring(T.fontStatus), tostring(T.fonts.regular), tostring(T.fonts.heading))
+    add("Theme %s, accent %s%s, list %s, incoming %s, hide whispers %s, style %s, text %s",
+        tostring(s.theme), tostring(s.accent), s.useClassColor and " (class)" or "", tostring(s.listMode),
+        tostring(s.incomingAction), tostring(s.hideWhispers), tostring(s.msgStyle), tostring(s.textSize))
+    if Hush.db then
+        local chats, msgs, saved, bytes = D.Stats()
+        add("Data: %d chats, %d messages, %d saved, %d characters, ~%d KB, schema %s",
+            chats, msgs, saved, #D.Characters(), ceil(bytes / 1024), tostring(Hush.db.schema))
+    end
+    local feats = {}
+    for k, v in pairs(C.features) do feats[#feats + 1] = k .. "=" .. (v and "1" or "0") end
+    sort(feats)
+    add("Features: %s", table.concat(feats, " "))
+    local addons = C.LoadedAddOns()
+    add("Addons loaded (%d): %s", #addons, table.concat(addons, ", "))
+    add("")
+    add("Recent Hush errors:")
+    if #Hush.errors == 0 then
+        add("  none")
+    else
+        for _, e in ipairs(Hush.errors) do
+            add("  [%s] %s (v%s): %s", date("%d/%m %H:%M", e.t), e.where, tostring(e.v), e.msg)
+        end
+    end
+    return table.concat(out, "\n")
+end
+
+function Hush.OpenReport()
+    Hush.Widgets.CopyBox("Hush report", Hush.BuildReport())
+end
+
+Hush:AddSlashCommand("report", function() Hush.OpenReport() end, "copy diagnostics for a bug report")
+
+-- Dev: an intentional error on the next message, to check the safety net and the report.
+Hush:AddSlashCommand("testerror", function()
+    local fired = false
+    Hush:RegisterCallback("MESSAGE_ADDED", function()
+        if fired then return end
+        fired = true
+        error("Intentional test error (/hush testerror)")
+    end, "testerror")
+    Hush:Print("The next message will raise a test error. The message is still saved; see /hush report.")
+end, "raise a test error on the next message")

@@ -43,5 +43,5 @@ read_globals = {
     "SendChatMessage", "BNSendWhisper", "BNGetNumFriends", "BNGetFriendInfo",
     "ChatFrameUtil", "ChatEdit_SetLastTellTarget", "hooksecurefunc", "IsShiftKeyDown",
     "Constants", "MouseIsOver", "MouseIsOver", "IsMouseButtonDown", "InviteUnit", "GuildInvite", "CanGuildInvite", "C_PartyInfo",
-    "IsInRaid", "IsInGroup", "GetNumRaidMembers", "GetNumPartyMembers", "GetNumGroupMembers",
+    "GetLocale", "GetNumAddOns", "GetAddOnInfo", "IsAddOnLoaded", "IsInRaid", "IsInGroup", "GetNumRaidMembers", "GetNumPartyMembers", "GetNumGroupMembers",
 }

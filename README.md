@@ -29,10 +29,11 @@ Pure Lua, no libraries.
 | `/hush filter` | Toggle hiding whispers in the default chat |
 | `/hush launcher` | Show the launcher button again |
 | `/hush reset` | Reset window position and size |
-| `/hush debug` | Diagnostics (paste this when reporting a problem) |
+| `/hush report` | Copy diagnostics for a bug report (also Settings > General) |
+| `/hush debug` | Diagnostics in the chat |
 
 ## Notes
 
-- WoW Forever is in beta and its API can change. Report problems with a screenshot and the output of `/hush debug`.
+- WoW Forever is in beta and its API can change. Report problems with a screenshot and the text from `/hush report`.
 - Modules can extend Hush, see `API.md`.
 - Fonts in `Media/Fonts` are Barlow (SIL Open Font License, `OFL.txt`).
