@@ -15,6 +15,9 @@ local rowPool, catPool
 local scrollbar
 
 local TOP_PAD = 6
+-- Pseudo category for the "Recent" list mode (not stored; collapse state lives in memory).
+local RECENT_ID = "_recent"
+local RECENT_CAT = { name = "Recent", collapsed = false }
 local EMPTY_TEXT = {
     whispers = "No conversations yet",
     groups = "No group chats yet",
@@ -89,7 +92,33 @@ local function collect()
         y = y + S.chatRowH
     end
 
-    if tab == "whispers" then
+    if tab == "whispers" and Hush.settings.listMode == "recent" then
+        -- Recent: pinned first, then everything newest first regardless of category.
+        local pinned, recent = {}, {}
+        for key, conv in pairs(Data.All()) do
+            if Data.TabOf(conv) == "whispers" and matches(conv, query) then
+                local list = conv.pinned and pinned or recent
+                list[#list + 1] = { key = key, conv = conv, last = conv.last }
+            end
+        end
+        local cats = Hush.char.categories
+        local sections = {
+            { id = "pinned", cat = cats.byId.pinned, list = pinned },
+            { id = RECENT_ID, cat = RECENT_CAT, list = recent },
+        }
+        for _, sec in ipairs(sections) do
+            if #sec.list > 0 or (sec.id == RECENT_ID and not searching) then
+                sort(sec.list, byLast)
+                local unread = 0
+                for _, e in ipairs(sec.list) do unread = unread + e.conv.unread end
+                items[#items + 1] = { kind = "cat", id = sec.id, cat = sec.cat, count = #sec.list, unread = unread, y = y, h = S.categoryH }
+                y = y + S.categoryH
+                if not sec.cat.collapsed or searching then
+                    for _, e in ipairs(sec.list) do addConv(e.key, e.conv, sec.id) end
+                end
+            end
+        end
+    elseif tab == "whispers" then
         local cats = Hush.char.categories
         local byCat = {}
         for _, id in ipairs(cats.order) do byCat[id] = {} end
@@ -256,8 +285,13 @@ local function createCat()
         if button == "RightButton" then
             Hush:Fire("CATEGORY_CONTEXT", self.id, self)
         else
+            if self.id == RECENT_ID then
+                RECENT_CAT.collapsed = not RECENT_CAT.collapsed
+                List.Refresh()
+                return
+            end
             local cat = Hush.char.categories.byId[self.id]
-            Data.SetCategoryCollapsed(self.id, not cat.collapsed)
+            if cat then Data.SetCategoryCollapsed(self.id, not cat.collapsed) end
         end
     end)
     return c
@@ -405,6 +439,9 @@ local function finishDrag()
     if not conv or not target then return end
     if target == "pinned" then
         if not conv.pinned then Data.SetPinned(key, true) end
+    elseif target == RECENT_ID then
+        -- Recent list mode: dropping outside Pinned just unpins.
+        if conv.pinned then Data.SetPinned(key, false) end
     else
         if conv.pinned then Data.SetPinned(key, false) end
         if conv.category ~= target then Data.Move(key, target) end
@@ -504,4 +541,8 @@ end, "List")
 Hush:RegisterCallback("CONV_RENAMED", function(_, oldKey, newKey)
     if List.selected == oldKey then List.selected = newKey end
     queueRefresh()
+end, "List")
+
+Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
+    if key == "listMode" then offset = 0; List.Refresh() end
 end, "List")

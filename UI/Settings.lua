@@ -223,6 +223,9 @@ local function buildAppearance(p)
 end
 
 local function buildBehavior(p)
+    p:Segment("Chat list", "Categories groups chats. Recent shows the newest first (pinned stay on top).",
+        { { value = "categories", label = "Categories" }, { value = "recent", label = "Recent" } },
+        get("listMode"), set("listMode"))
     p:Toggle("Hide whispers in the default chat", "Never while in combat. Everything is always saved in Hush.",
         get("hideWhispers"), set("hideWhispers"))
     p:Toggle("Hide Hush in combat", "Opens again after combat if it was open.", get("hideInCombat"), set("hideInCombat"))

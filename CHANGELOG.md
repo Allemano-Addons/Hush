@@ -132,3 +132,6 @@
 ## 0.1.6 – 2026-09-27
 - Fix: "Guild invite" failed with "Interface action failed because of an addon" – guild invites are protected on WoW Forever. It now runs `/ginvite <name>` through an invisible secure button over the menu item (not available in combat, shown as "(not in combat)").
 - Module API: menu items and header buttons accept `macro` for protected actions; header overlays are re-armed when the window opens and after combat.
+
+## 0.1.7 – 2026-09-27
+- Option Settings → Behavior → Chat list: **Categories** (grouped, as before) or **Recent** (Pinned on top, then all chats newest first regardless of category). Categories keep working in the background; in Recent, drag and drop only pins/unpins.

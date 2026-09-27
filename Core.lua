@@ -104,6 +104,7 @@ local DEFAULT_SETTINGS = {
     soundKey = "ping",
     font = "auto",           -- "auto" or a font name (game font or LibSharedMedia)
     headingFont = "auto",
+    listMode = "categories", -- Whispers tab: "categories" (grouped) or "recent" (newest first)
     combatToast = true,
 }
 
