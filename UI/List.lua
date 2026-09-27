@@ -22,7 +22,7 @@ local EMPTY_TEXT = {
     whispers = "No conversations yet",
     groups = "No group chats yet",
     requests = "No requests",
-    saved = "No saved messages yet. Right-click a message → Save message.",
+    saved = "No saved messages yet. Right-click a message > Save message.",
 }
 
 -- ---------------------------------------------------------------------------

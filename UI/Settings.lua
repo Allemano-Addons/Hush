@@ -156,7 +156,7 @@ local function buildGeneral(p)
         function() Hush.Main.ResetPosition() end)
     p:Header("About")
     p:Text("Hush " .. tostring(Hush.version) .. " for WoW Forever.  /hush opens and closes the window, /hush help lists all commands. "
-        .. "Key bindings: Key Bindings → AddOns → Hush.")
+        .. "Key bindings: Key Bindings > AddOns > Hush.")
 end
 
 local function buildAppearance(p)

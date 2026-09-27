@@ -195,3 +195,8 @@
 ## 0.1.21 – 2026-09-27
 - **Blizzard Style** theme: the main window, settings and the Recruit ad panel get the classic dark dialog background with the stone border drawn above the content; popups, notices, menus, tooltips and the launcher get the Blizzard tooltip frame; buttons become the red panel buttons with gold text; titles are gold and headings use Friz Quadrata. Everything is gated by `Theme:IsBlizzard()`, so the other themes are unchanged.
 - Widgets: `W.SkinPanel(frame, opts)` and `W.SkinButton(button)` (do nothing unless Blizzard Style is active).
+
+## 0.1.22 – 2026-09-27
+- Fix: "Reload" after picking a theme still did nothing. Dialog buttons with a protected action now use the method EllesmereUI uses on WoW Forever: `InsecureActionButtonTemplate`, mouse-up only (`useOnKeyDown = false`), so the dialog closing on the press can no longer swallow the action.
+- Visible texts use ">" instead of "→" (Friz Quadrata has no arrow glyph).
+- Removed the temporary `/hush texturetest`.

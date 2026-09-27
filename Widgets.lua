@@ -616,9 +616,20 @@ local function placeOver(o, target)
     return true
 end
 
-function W.SecureMacroOverlay(target, postClick)
-    local o = CreateFrame("Button", nil, UIParent, "SecureActionButtonTemplate")
-    o:RegisterForClicks("AnyUp", "AnyDown") -- the template acts once, per the key-down setting
+-- opts.upOnly: the way EllesmereUI runs /reload on WoW Forever – InsecureActionButtonTemplate,
+-- mouse-up only and useOnKeyDown = false, so the action fires on release (a window that
+-- closes on the press can no longer swallow it).
+function W.SecureMacroOverlay(target, postClick, opts)
+    local upOnly = opts and opts.upOnly
+    local template = upOnly and "InsecureActionButtonTemplate" or "SecureActionButtonTemplate"
+    local ok, o = pcall(CreateFrame, "Button", nil, UIParent, template)
+    if not ok then o = CreateFrame("Button", nil, UIParent, "SecureActionButtonTemplate") end
+    if upOnly then
+        o:RegisterForClicks("AnyUp")
+        o:SetAttribute("useOnKeyDown", false)
+    else
+        o:RegisterForClicks("AnyUp", "AnyDown") -- the template acts once, per the key-down setting
+    end
     o:SetAttribute("type", "macro")
     o:Hide()
     -- Keep the Hush button's hover look.
@@ -925,7 +936,7 @@ function W.Dialog(parent, opts)
     -- Protected actions (e.g. /reload): the OK button runs a slash command securely.
     for s, b in pairs(d.okButtons) do
         if s == style and opts.macro then
-            b.secure = b.secure or W.SecureMacroOverlay(b, function() d:Hide() end)
+            b.secure = b.secure or W.SecureMacroOverlay(b, function() d:Hide() end, { upOnly = true })
             b.secure:Arm(opts.macro)
         elseif b.secure then
             b.secure:Disarm()

@@ -365,11 +365,11 @@ Hush:RegisterCallback("READY", function()
     for _, c in ipairs(Data.Characters()) do
         if c.char.legacy then
             Hush:Print("Chats from before the surname fix are under \"" .. (c.char.name or c.key)
-                .. " (older data)\". Merge them into the right character in Settings → Storage.")
+                .. " (older data)\". Merge them into the right character in Settings > Storage.")
             break
         end
     end
     -- Storage rules run once per login (cheap: one pass over the conversations).
     local removed = Data.Cleanup()
-    if removed > 0 then Hush:Print(("Removed %d old chat%s (Settings → Storage)."):format(removed, removed == 1 and "" or "s")) end
+    if removed > 0 then Hush:Print(("Removed %d old chat%s (Settings > Storage)."):format(removed, removed == 1 and "" or "s")) end
 end, "Chat")
