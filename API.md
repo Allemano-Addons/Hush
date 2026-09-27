@@ -85,7 +85,7 @@ Built-in ids: `pinned` (virtual), `guild`, `recruits`, `other`.
 | Function | Description |
 |---|---|
 | `Hush.AddStatusChip(fn, owner)` | `fn(key, conv) → text [, r, g, b]` or `nil`. The first provider with text wins; default color is the accent. |
-| `Hush.AddHeaderButton(def, owner)` | `def = { id, text, tooltip, onClick = fn(key, conv), macro = fn(key, conv) → slash command, isShown = fn(key, conv) }`. Use `macro` for protected actions (e.g. `"/ginvite " .. conv.target`): it runs through an invisible secure button, not in combat. |
+| `Hush.AddHeaderButton(def, owner)` | `def = { id, text, tooltip, onClick = fn(key, conv), isShown = fn(key, conv) }`. For protected actions (guild invite) use a chat menu item with `macro` instead. |
 | `Hush.AddHeaderInfo(fn, owner)` | `fn(key, conv) → text` appended to the info line under the name. |
 | `Hush.RefreshHeader()` | Re-run chips and `isShown` for the open conversation. |
 
@@ -104,7 +104,7 @@ Built-in ids: `pinned` (virtual), `guild`, `recruits`, `other`.
 | Function | Description |
 |---|---|
 | `Hush.IsGuildMember(name)` | From the cached guild roster. |
-| `Hush.CanGuildInvite()` / `Hush.GuildInvite(name)` | Guild invites are **protected** on WoW Forever: calling `GuildInvite` from addon code is blocked. Use a menu item or header button with `macro = "/ginvite " .. name` instead. |
+| `Hush.CanGuildInvite()` / `Hush.GuildInvite(name)` | Guild invites are **protected** on WoW Forever: calling `GuildInvite` from addon code is blocked. Use a chat menu item with `macro = "/ginvite " .. name` instead (Hush already has "Guild invite" in the chat menu). |
 | `Hush.InviteToGroup(name)` | |
 | `Hush.ShowDialog(opts)` | Confirm or text prompt inside the Hush window. `opts = { title, text, input, okText, danger, onOk = fn(value) }` |
 

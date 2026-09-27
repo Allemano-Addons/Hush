@@ -143,3 +143,6 @@
 ## 0.1.9 – 2026-09-27
 - Fix: secure buttons for header actions (Recruit's Invite) were placed before the header had its new layout, so clicking did nothing. Placement now waits one frame; a pending placement is cancelled if the button hides or moves.
 - Unsent text is kept per conversation: switching chats saves the draft and restores it when you come back (for the session).
+
+## 0.1.10 – 2026-09-27
+- Removed secure `macro` support for header buttons: it did not work reliably. Protected actions such as guild invites stay in the chat right-click menu (where they work).

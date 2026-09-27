@@ -445,12 +445,6 @@ local function updateHeaderButtons(header, key, conv)
             anchor = hb.button
         end
         hb.button:SetShown(shown)
-        -- Protected actions: def.macro(key, conv) -> slash command run by a secure overlay.
-        if hb.def.macro then
-            hb.secure = hb.secure or W.SecureMacroOverlay(hb.button)
-            local text = shown and hb.def.macro(key, conv)
-            if not (text and hb.secure:Arm(text)) then hb.secure:Disarm() end
-        end
     end
 end
 
