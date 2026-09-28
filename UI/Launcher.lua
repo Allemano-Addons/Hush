@@ -75,17 +75,24 @@ local function build()
     button.border = W.Border(button, "line")
     W.SkinPanel(button, { kind = "tooltip", hide = { button.bg }, borders = { button.border } })
 
-    -- Speech bubble drawn from two rectangles, on whole pixels.
-    local bubble = button:CreateTexture(nil, "ARTWORK")
-    bubble:SetSize(14, 10)
-    bubble:SetPoint("TOPLEFT", 8, -9)
-    local tail = button:CreateTexture(nil, "ARTWORK")
-    tail:SetSize(4, 4)
-    tail:SetPoint("TOPLEFT", bubble, "BOTTOMLEFT", 2, 0)
-    W.OnAccent(function(r, g, b)
-        bubble:SetColorTexture(r, g, b, 1)
-        tail:SetColorTexture(r, g, b, 1)
-    end)
+    -- The Hush mark (Media/wow/mark.tga) in its own colors; if it does not load, a speech
+    -- bubble drawn from two accent-colored rectangles.
+    local mark = button:CreateTexture(nil, "ARTWORK")
+    mark:SetPoint("TOPLEFT", 3, -3)
+    mark:SetPoint("BOTTOMRIGHT", -3, 3)
+    if mark:SetTexture("Interface\\AddOns\\Hush\\Media\\wow\\mark") == false then
+        mark:Hide()
+        local bubble = button:CreateTexture(nil, "ARTWORK")
+        bubble:SetSize(14, 10)
+        bubble:SetPoint("TOPLEFT", 8, -9)
+        local tail = button:CreateTexture(nil, "ARTWORK")
+        tail:SetSize(4, 4)
+        tail:SetPoint("TOPLEFT", bubble, "BOTTOMLEFT", 2, 0)
+        W.OnAccent(function(r, g, b)
+            bubble:SetColorTexture(r, g, b, 1)
+            tail:SetColorTexture(r, g, b, 1)
+        end)
+    end
 
     button.badge = W.Badge(button)
     button.badge:SetPoint("CENTER", button, "TOPRIGHT", -2, -2)

@@ -223,3 +223,6 @@ Found with `/hush report`:
 
 ## 0.1.28 – 2026-09-27
 - Module API: `Hush.OpenWhisper(name, text)` puts a draft in the empty input (for Hush LFG's "Ask to join"; never sent by itself), `Hush.RequestInvite(name)` asks a group leader for an invite.
+
+## 0.1.29 – 2026-09-28
+- New Hush logo (Allemano Addons family): `Media/wow/icon.tga` in the addon list, `Media/wow/mark.tga` on the launcher button in its own colors (the drawn speech bubble stays as fallback). Old `Media/logo.tga` / `Logo.png` removed; `Media/png` and `Media/svg` are the source pictures.
