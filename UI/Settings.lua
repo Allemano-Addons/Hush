@@ -184,7 +184,7 @@ local function buildAppearance(p)
             sw:SetPoint("LEFT", (#swatches) * 28, 0)
             swatches[#swatches + 1] = sw
         end
-        add("3FC7EB", "Hush")
+        add("3FD0E0", "Hush")
         for _, class in ipairs(CLASS_ORDER) do
             local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
             if color then
@@ -239,6 +239,8 @@ local function buildThemes(p)
             card.bg = W.Fill(card, "field", 1)
             card.bg:SetAllPoints()
             card.border = W.Border(card, "line")
+            W.Round(card.bg)
+            W.RoundBorder(card.border)
 
             -- Palette preview: window, sidebar, field, line, text, accent.
             local x = 12
@@ -508,7 +510,7 @@ local function updateMenu()
         local b = pg.menuButton
         local active = pg == current
         b.sel:SetShown(active)
-        b.bar:SetShown(active)
+        b.bar:SetShown(active and not Theme:IsAllemano())
         b.text:SetTextColor(Theme:Color(active and "text" or "textDim"))
     end
 end
@@ -537,6 +539,12 @@ local function addMenuButton(pg)
     b.sel = W.Fill(b, "selected", 1)
     b.sel:SetAllPoints()
     b.sel:Hide()
+    if Theme:IsAllemano() then -- rounded, inset selection instead of the accent bar
+        W.Round(b.sel)
+        b.sel:ClearAllPoints()
+        b.sel:SetPoint("TOPLEFT", 6, -2)
+        b.sel:SetPoint("BOTTOMRIGHT", -6, 2)
+    end
     b.bar = b:CreateTexture(nil, "ARTWORK")
     b.bar:SetPoint("TOPLEFT")
     b.bar:SetPoint("BOTTOMLEFT")

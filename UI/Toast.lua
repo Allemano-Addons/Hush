@@ -43,6 +43,11 @@ local function build()
     frame.bar:SetPoint("BOTTOMLEFT")
     W.PixelSize(frame.bar, frame, "w", 3)
     W.OnAccent(function(r, g, b) frame.bar:SetColorTexture(r, g, b, 1) end)
+    if Theme:IsAllemano() then -- inside the rounded corners
+        frame.bar:ClearAllPoints()
+        frame.bar:SetPoint("TOPLEFT", 4, -8)
+        frame.bar:SetPoint("BOTTOMLEFT", 4, 8)
+    end
 
     frame.title = W.Text(frame, "semibold", 1, "text")
     frame.title:SetPoint("TOPLEFT", 16, -11)

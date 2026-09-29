@@ -158,6 +158,11 @@ local function create()
     f.bar:SetPoint("BOTTOMLEFT")
     W.PixelSize(f.bar, f, "w", 2)
     W.OnAccent(function(r, g, b) f.bar:SetColorTexture(r, g, b, 1) end)
+    if Theme:IsAllemano() then -- inside the rounded corners
+        f.bar:ClearAllPoints()
+        f.bar:SetPoint("TOPLEFT", 4, -8)
+        f.bar:SetPoint("BOTTOMLEFT", 4, 8)
+    end
     enableLinks(f)
 
     -- Name (click opens Hush on the conversation)

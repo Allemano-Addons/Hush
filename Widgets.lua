@@ -1,5 +1,5 @@
 -- Widgets: flat building blocks in the Hush style. No Blizzard textures or templates.
-local _, Hush = ...
+local addonName, Hush = ...
 
 local Theme, Compat = Hush.Theme, Hush.Compat
 
@@ -40,6 +40,7 @@ function W.Fill(frame, colorKey, alpha, layer)
     local t = frame:CreateTexture(nil, layer or "BACKGROUND")
     local r, g, b = Theme:Color(colorKey)
     t:SetColorTexture(r, g, b, alpha or 1)
+    t.hushColor = { r, g, b, alpha or 1 } -- read by W.Round
     return t
 end
 
@@ -63,6 +64,7 @@ end
 -- 1 px border on all sides. Returns a table with the four lines and :SetColor.
 local borderMethods = {}
 function borderMethods:SetColor(r, g, b, a)
+    self.color = { r, g, b, a or 1 }
     for _, side in ipairs({ "top", "bottom", "left", "right" }) do
         self[side]:SetColorTexture(r, g, b, a or 1)
     end
@@ -73,6 +75,194 @@ function W.Border(frame, colorKey)
     for _, side in ipairs({ "top", "bottom", "left", "right" }) do
         b[side] = W.Line(frame, side, colorKey)
     end
+    local r, g, bl = Theme:Color(colorKey or "line")
+    b.color = { r, g, bl, 1 }
+    return b
+end
+
+-- ---------------------------------------------------------------------------
+-- Rounded corners (Allemano theme only; in other themes both functions do nothing).
+-- W.Round turns an existing flat texture into a rounded rectangle and W.RoundBorder does
+-- the same for a W.Border. Callers keep using the same methods (SetColorTexture, SetAlpha,
+-- Show/Hide, SetPoint, border:SetColor), so the code around them does not change.
+-- Corners come from Media/ui (white circle / ring, tinted); if those do not load, the
+-- corners are drawn square.
+-- ---------------------------------------------------------------------------
+
+local UI_MEDIA = "Interface\\AddOns\\" .. addonName .. "\\Media\\ui\\"
+local QUADS = { -- corner point, texcoords of that quarter of the circle
+    { "TOPLEFT", 0, 0.5, 0, 0.5 }, { "TOPRIGHT", 0.5, 1, 0, 0.5 },
+    { "BOTTOMLEFT", 0, 0.5, 0.5, 1 }, { "BOTTOMRIGHT", 0.5, 1, 0.5, 1 },
+}
+local RING_SIZES = { 4, 6, 8, 10 }
+
+local function ringFile(radius)
+    local best = RING_SIZES[1]
+    for _, s in ipairs(RING_SIZES) do
+        if abs(s - radius) < abs(best - radius) then best = s end
+    end
+    return UI_MEDIA .. "ring" .. best
+end
+
+-- Largest radius that fits the current size (tiny frames get smaller corners).
+local function fitRadius(radius, w, h)
+    return max(0, min(radius, floor(min(w or 0, h or 0) / 2)))
+end
+
+function W.Round(tex, radius)
+    if not Theme:IsAllemano() or not tex or tex.round then return tex end
+    radius = radius or Theme.radius.control
+    local parent = tex:GetParent()
+    local layer, sub = tex:GetDrawLayer()
+    local R = {
+        color = tex.hushColor and { unpack(tex.hushColor) } or { 1, 1, 1, 1 },
+        alpha = tex:GetAlpha(), shown = tex:IsShown(), corners = {}, rects = {}, parts = {},
+    }
+
+    -- An invisible frame carries the geometry; the pieces are textures on the parent, so
+    -- they keep the original draw layer (under the text, above the parent's background).
+    local anchor = CreateFrame("Frame", nil, parent)
+    anchor:SetSize(tex:GetSize())
+    for i = 1, tex:GetNumPoints() do anchor:SetPoint(tex:GetPoint(i)) end
+    tex:Hide()
+
+    local function piece(list)
+        local t = parent:CreateTexture(nil, layer, nil, sub)
+        list[#list + 1] = t
+        R.parts[#R.parts + 1] = t
+        return t
+    end
+    for _, q in ipairs(QUADS) do
+        local t = piece(R.corners)
+        t.quad = q
+        R.ok = t:SetTexture(UI_MEDIA .. "round") ~= false
+        if R.ok then t:SetTexCoord(q[2], q[3], q[4], q[5]) end
+    end
+    local mid, left, right = piece(R.rects), piece(R.rects), piece(R.rects)
+
+    local function layout()
+        local r = fitRadius(radius, anchor:GetWidth(), anchor:GetHeight())
+        for _, t in ipairs(R.corners) do
+            t:ClearAllPoints()
+            t:SetPoint(t.quad[1], anchor, t.quad[1])
+            t:SetSize(max(r, 0.01), max(r, 0.01))
+            t:SetShown(R.shown and r > 0)
+        end
+        mid:ClearAllPoints()
+        mid:SetPoint("TOPLEFT", anchor, "TOPLEFT", r, 0)
+        mid:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", -r, 0)
+        left:ClearAllPoints()
+        left:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, -r)
+        left:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMLEFT", r, r)
+        right:ClearAllPoints()
+        right:SetPoint("TOPLEFT", anchor, "TOPRIGHT", -r, -r)
+        right:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", 0, r)
+        left:SetShown(R.shown and r > 0)
+        right:SetShown(R.shown and r > 0)
+    end
+    local function paint()
+        local c = R.color
+        for _, t in ipairs(R.rects) do t:SetColorTexture(c[1], c[2], c[3], c[4]) end
+        for _, t in ipairs(R.corners) do
+            if R.ok then t:SetVertexColor(c[1], c[2], c[3], c[4]) else t:SetColorTexture(c[1], c[2], c[3], c[4]) end
+        end
+    end
+    local function show(on)
+        R.shown = on and true or false
+        mid:SetShown(R.shown)
+        layout()
+    end
+    anchor:SetScript("OnSizeChanged", layout)
+
+    tex.round = R
+    tex.SetColorTexture = function(_, r, g, b, a) R.color = { r, g, b, a or 1 } paint() end
+    tex.SetVertexColor = tex.SetColorTexture
+    tex.SetAlpha = function(_, a)
+        R.alpha = a
+        for _, t in ipairs(R.parts) do t:SetAlpha(a) end
+    end
+    tex.GetAlpha = function() return R.alpha end
+    tex.Show = function() show(true) end
+    tex.Hide = function() show(false) end
+    tex.SetShown = function(_, on) show(on) end
+    tex.IsShown = function() return R.shown end
+    tex.IsVisible = function() return R.shown and parent:IsVisible() end
+    tex.SetPoint = function(_, ...) anchor:SetPoint(...) end
+    tex.ClearAllPoints = function() anchor:ClearAllPoints() end
+    tex.SetAllPoints = function(_, rel) anchor:SetAllPoints(rel or parent) end
+    tex.SetSize = function(_, w, h) anchor:SetSize(w, h) end
+    tex.SetWidth = function(_, w) anchor:SetWidth(w) end
+    tex.SetHeight = function(_, h) anchor:SetHeight(h) end
+    tex.GetWidth = function() return anchor:GetWidth() end
+    tex.GetHeight = function() return anchor:GetHeight() end
+    tex.SetDrawLayer = function(_, l, s)
+        for _, t in ipairs(R.parts) do t:SetDrawLayer(l, s) end
+    end
+
+    paint()
+    tex:SetAlpha(R.alpha)
+    show(R.shown)
+    return tex
+end
+
+function W.RoundBorder(b, radius)
+    if not Theme:IsAllemano() or not b or b.round then return b end
+    radius = radius or Theme.radius.control
+    local frame = b.top:GetParent()
+    local layer, sub = b.top:GetDrawLayer()
+    for _, side in ipairs({ "top", "bottom", "left", "right" }) do b[side]:Hide() end
+
+    local R = { corners = {}, lines = {} }
+    local file = ringFile(radius)
+    for _, q in ipairs(QUADS) do
+        local t = frame:CreateTexture(nil, layer, nil, sub)
+        t.quad = q
+        R.ok = t:SetTexture(file) ~= false
+        if R.ok then t:SetTexCoord(q[2], q[3], q[4], q[5]) end
+        R.corners[#R.corners + 1] = t
+    end
+    local top, bottom = frame:CreateTexture(nil, layer, nil, sub), frame:CreateTexture(nil, layer, nil, sub)
+    local left, right = frame:CreateTexture(nil, layer, nil, sub), frame:CreateTexture(nil, layer, nil, sub)
+    R.lines = { top, bottom, left, right }
+    W.PixelSize(top, frame, "h")
+    W.PixelSize(bottom, frame, "h")
+    W.PixelSize(left, frame, "w")
+    W.PixelSize(right, frame, "w")
+
+    local function layout()
+        local r = fitRadius(radius, frame:GetWidth(), frame:GetHeight())
+        for _, t in ipairs(R.corners) do
+            t:ClearAllPoints()
+            t:SetPoint(t.quad[1], frame, t.quad[1])
+            t:SetSize(max(r, 0.01), max(r, 0.01))
+            t:SetShown(r > 0)
+        end
+        top:ClearAllPoints()
+        top:SetPoint("TOPLEFT", r, 0)
+        top:SetPoint("TOPRIGHT", -r, 0)
+        bottom:ClearAllPoints()
+        bottom:SetPoint("BOTTOMLEFT", r, 0)
+        bottom:SetPoint("BOTTOMRIGHT", -r, 0)
+        left:ClearAllPoints()
+        left:SetPoint("TOPLEFT", 0, -r)
+        left:SetPoint("BOTTOMLEFT", 0, r)
+        right:ClearAllPoints()
+        right:SetPoint("TOPRIGHT", 0, -r)
+        right:SetPoint("BOTTOMRIGHT", 0, r)
+    end
+    frame:HookScript("OnSizeChanged", layout)
+
+    b.round = R
+    b.SetColor = function(self, r, g, bl, a)
+        self.color = { r, g, bl, a or 1 }
+        for _, t in ipairs(R.lines) do t:SetColorTexture(r, g, bl, a or 1) end
+        for _, t in ipairs(R.corners) do
+            if R.ok then t:SetVertexColor(r, g, bl, a or 1) else t:SetColorTexture(r, g, bl, a or 1) end
+        end
+    end
+    local c = b.color or { Theme:Color("line") }
+    b:SetColor(c[1], c[2], c[3], c[4] or 1)
+    layout()
     return b
 end
 
@@ -120,8 +310,20 @@ end
 -- Dialog: dark dialog background + stone border drawn above the content (like Blizzard windows).
 -- Tooltip: the tooltip background and border, for small boxes (popup, menus, notices).
 function W.SkinPanel(frame, opts)
-    if not Theme:IsBlizzard() or frame.skinBg then return end
     opts = opts or {}
+    -- Allemano: one rounded surface (the first background; the others, e.g. a sidebar,
+    -- are hidden so the window reads as one piece) and a rounded border.
+    if Theme:IsAllemano() then
+        if frame.hushRounded then return end
+        frame.hushRounded = true
+        local radius = opts.radius or (opts.kind == "tooltip" and Theme.radius.control or Theme.radius.panel)
+        local hide = opts.hide or {}
+        if hide[1] then W.Round(hide[1], radius) end
+        for i = 2, #hide do hide[i]:Hide() end
+        for _, b in ipairs(opts.borders or {}) do W.RoundBorder(b, radius) end
+        return
+    end
+    if not Theme:IsBlizzard() or frame.skinBg then return end
     for _, t in ipairs(opts.hide or {}) do t:Hide() end
     for _, b in ipairs(opts.borders or {}) do hideBorder(b) end
     local dialog = opts.kind ~= "tooltip"
@@ -355,6 +557,7 @@ function W.IconButton(parent, iconName, size, tooltip, onClick, fallbackGlyph)
     b.bg = W.Fill(b, "selected", 1)
     b.bg:SetAllPoints()
     b.bg:Hide()
+    W.Round(b.bg, Theme.radius.small)
     b.icon = W.Icon(b, iconName, 10, fallbackGlyph)
     b.icon:SetColor(Theme:Color("textDim"))
     b:SetScript("OnEnter", function(self)
@@ -386,6 +589,8 @@ function W.Button(parent, label, style, onClick)
         b.bg = W.Fill(b, "field", 1)
         b.bg:SetAllPoints()
         b.border = W.Border(b, "line")
+        W.Round(b.bg)
+        W.RoundBorder(b.border)
     end
 
     if style == "accent" then
@@ -430,6 +635,8 @@ function W.EditBox(parent, placeholder, height)
     e.bg = W.Fill(e, "field", 1)
     e.bg:SetAllPoints()
     e.border = W.Border(e, "line")
+    W.Round(e.bg)
+    W.RoundBorder(e.border)
 
     e.placeholder = W.Text(e, "regular", 0, "textFaint")
     e.placeholder:SetPoint("LEFT", 10, 0)
@@ -460,6 +667,7 @@ function W.Badge(parent)
     b:SetHeight(16)
     b.bg = b:CreateTexture(nil, "ARTWORK")
     b.bg:SetAllPoints()
+    W.Round(b.bg, 8) -- a pill
     W.OnAccent(function(r, g, bl) b.bg:SetColorTexture(r, g, bl, 1) end)
     b.text = W.Text(b, "semibold", -2, "sidebar")
     b.text:SetPoint("CENTER", 0, 0)
@@ -513,6 +721,7 @@ function W.Scrollbar(parent, onScroll)
     thumb:SetWidth(4)
     thumb.tex = W.Fill(thumb, "line", 1, "OVERLAY")
     thumb.tex:SetAllPoints()
+    W.Round(thumb.tex, 2)
     thumb:EnableMouse(true)
     bar.thumb = thumb
     bar.offset, bar.maxOffset = 0, 0
@@ -733,9 +942,16 @@ local function menuButton(m, i)
     b.hover = W.Fill(b, "selected", 1)
     b.hover:SetAllPoints()
     b.hover:Hide()
+    if Theme:IsAllemano() then
+        W.Round(b.hover, Theme.radius.small)
+        b.hover:ClearAllPoints()
+        b.hover:SetPoint("TOPLEFT", 4, 0)
+        b.hover:SetPoint("BOTTOMRIGHT", -4, 0)
+    end
     b.check = b:CreateTexture(nil, "ARTWORK")
     b.check:SetSize(6, 6)
     b.check:SetPoint("LEFT", 10, 0)
+    W.Round(b.check, 3)
     W.OnAccent(function(r, g, bl) b.check:SetColorTexture(r, g, bl, 1) end)
     b.text = W.Text(b, "regular", 0, "text")
     b.text:SetPoint("LEFT", 24, 0)
@@ -988,6 +1204,8 @@ function W.Toggle(parent, onChange)
     t.track:SetAllPoints()
     t.knob = t:CreateTexture(nil, "ARTWORK")
     t.knob:SetSize(12, 12)
+    W.Round(t.track, 8) -- pill track, round knob
+    W.Round(t.knob, 6)
     function t:Set(on)
         self.value = on and true or false
         self.knob:ClearAllPoints()
@@ -1021,6 +1239,7 @@ function W.Segment(parent, options, onChange)
         b.value = opt.value
         b.bg = W.Fill(b, "field", 1)
         b.bg:SetAllPoints()
+        W.Round(b.bg, Theme.radius.small)
         b.text = W.Text(b, "semibold", -1, "textDim")
         b.text:SetPoint("CENTER")
         b.text:SetText(opt.label)
@@ -1037,7 +1256,7 @@ function W.Segment(parent, options, onChange)
         s.buttons[i] = b
     end
     s:SetWidth(x - 2)
-    W.Border(s, "line")
+    W.RoundBorder(W.Border(s, "line"), Theme.radius.small)
     function s:Set(value)
         self.value = value
         local r, g, bl = Theme:Accent()
@@ -1097,6 +1316,8 @@ function W.Dropdown(parent, width, getOptions, onChange)
     d.bg = W.Fill(d, "field", 1)
     d.bg:SetAllPoints()
     d.border = W.Border(d, "line")
+    W.Round(d.bg)
+    W.RoundBorder(d.border)
     d.text = W.Text(d, "regular", 0, "text")
     d.text:SetPoint("LEFT", 10, 0)
     d.text:SetWidth((width or 200) - 36)
@@ -1144,6 +1365,9 @@ function W.Swatch(parent, r, g, b, tooltip, onClick)
     s.fill:SetPoint("TOPLEFT", 3, -3)
     s.fill:SetPoint("BOTTOMRIGHT", -3, 3)
     s.fill:SetColorTexture(r, g, b, 1)
+    s.fill.hushColor = { r, g, b, 1 }
+    W.Round(s.fill, Theme.radius.small)
+    W.RoundBorder(s.ring)
     function s:SetSelected(on)
         if on then self.ring:SetColor(Theme:Color("text")) else self.ring:SetColor(Theme:Color("line")) end
     end
@@ -1194,7 +1418,8 @@ function W.CopyBox(title, text)
         box:SetPoint("BOTTOMRIGHT", -16, 16)
         box.bg = W.Fill(box, "field", 1)
         box.bg:SetAllPoints()
-        W.Border(box, "line")
+        W.Round(box.bg)
+        W.RoundBorder(W.Border(box, "line"))
         local scroll = CreateFrame("ScrollFrame", nil, box)
         scroll:SetPoint("TOPLEFT", 8, -8)
         scroll:SetPoint("BOTTOMRIGHT", -8, 8)

@@ -223,6 +223,15 @@ local function createRow()
     r.sel = W.Fill(r, "selected", 1)
     r.sel:SetAllPoints()
     r.sel:Hide()
+    -- Allemano: hover and selection are rounded and inset (no accent bar, see fillRow).
+    if Theme:IsAllemano() then
+        for _, t in ipairs({ r.hover, r.sel }) do
+            W.Round(t)
+            t:ClearAllPoints()
+            t:SetPoint("TOPLEFT", 6, -2)
+            t:SetPoint("BOTTOMRIGHT", -6, 2)
+        end
+    end
     r.bar = r:CreateTexture(nil, "ARTWORK")
     r.bar:SetPoint("TOPLEFT")
     r.bar:SetPoint("BOTTOMLEFT")
@@ -235,7 +244,8 @@ local function createRow()
     r.box:SetPoint("LEFT", S.padding, 0)
     r.box.bg = W.Fill(r.box, "field", 1)
     r.box.bg:SetAllPoints()
-    W.Border(r.box, "line")
+    W.Round(r.box.bg, Theme.radius.small)
+    W.RoundBorder(W.Border(r.box, "line"), Theme.radius.small)
     r.initial = W.Text(r.box, "semibold", 2)
     r.initial:SetPoint("CENTER", 0, 0)
     r.initial:SetJustifyH("CENTER")
@@ -247,6 +257,8 @@ local function createRow()
     r.dotRing:SetSize(10, 10)
     r.dotRing:SetPoint("CENTER", r.dot, "CENTER")
     r.dotRing:SetColorTexture(Theme:Color("sidebar"))
+    W.Round(r.dot, 4) -- round status dots
+    W.Round(r.dotRing, 5)
 
     r.name = W.Text(r, "semibold", 0)
     r.name:SetPoint("TOPLEFT", r.box, "TOPRIGHT", 10, -1)
@@ -283,7 +295,7 @@ local function fillRow(r, it)
     r.catId = it.catId
     local selected = it.key == List.selected
     r.sel:SetShown(selected)
-    r.bar:SetShown(selected)
+    r.bar:SetShown(selected and not Theme:IsAllemano())
 
     local nr, ng, nb = List.NameColor(conv)
     r.initial:SetText(initial(conv.display))

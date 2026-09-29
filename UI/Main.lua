@@ -70,10 +70,16 @@ local TABS = {
 }
 
 local function updateTabs()
+    -- Allemano: the active tab is shown by its accent-colored label (no underline).
+    local allemano = Theme:IsAllemano()
     for _, tab in ipairs(frame.tabs) do
         local active = tab.id == Main.activeTab
-        tab.text:SetTextColor(Theme:Color(active and "text" or "textDim"))
-        tab.underline:SetShown(active)
+        if active and allemano then
+            tab.text:SetTextColor(Theme:Accent())
+        else
+            tab.text:SetTextColor(Theme:Color(active and "text" or "textDim"))
+        end
+        tab.underline:SetShown(active and not allemano)
     end
 end
 
@@ -126,6 +132,8 @@ local function createTabs(parent)
         tab:SetScript("OnLeave", function() updateTabs() end)
         frame.tabs[i] = tab
     end
+
+    W.OnAccent(function() if #frame.tabs == count then updateTabs() end end)
 
     bar:SetScript("OnSizeChanged", function(self, w)
         local tw = w / count
@@ -186,6 +194,21 @@ local function buildSidebar()
     local name = W.Text(title, "heading", 3, "text")
     name:SetPoint("LEFT", square, "RIGHT", 8, 0)
     name:SetText("HUSH")
+
+    -- Allemano: the Hush mark (own colors) and "Hush" instead of the accent square.
+    if Theme:IsAllemano() then
+        local mark = title:CreateTexture(nil, "ARTWORK")
+        mark:SetSize(17, 14)
+        mark:SetPoint("LEFT", S.padding, 0)
+        if mark:SetTexture("Interface\\AddOns\\Hush\\Media\\wow\\mark") ~= false then
+            square:Hide()
+            name:ClearAllPoints()
+            name:SetPoint("LEFT", mark, "RIGHT", 8, 0)
+        else
+            mark:Hide()
+        end
+        name:SetText("Hush")
+    end
     frame.titleText = name
 
     local settingsBtn = W.IconButton(title, "settings", 22, "Settings", function()
@@ -485,6 +508,8 @@ local function updateChip(header, key, conv)
         chip.bg = chip:CreateTexture(nil, "BACKGROUND")
         chip.bg:SetAllPoints()
         chip.border = W.Border(chip, "line")
+        W.Round(chip.bg, Theme.radius.small)
+        W.RoundBorder(chip.border, Theme.radius.small)
         chip.text = W.Text(chip, "heading", -2, "text")
         chip.text:SetPoint("CENTER", 0, 0)
         header.chip = chip

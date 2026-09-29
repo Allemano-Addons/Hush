@@ -35,6 +35,11 @@ Theme.colors = {
 -- ---------------------------------------------------------------------------
 
 Theme.THEMES = {
+    -- The Allemano Addons look (as on the website): neutral near-black, rounded corners.
+    -- Everything it changes beyond colors is gated by Theme:IsAllemano().
+    { id = "allemano", name = "Allemano", accent = "3FD0E0", style = "allemano", palette = {
+        window = "121418", sidebar = "0E1013", field = "181B20", selected = "1F232A", line = "262A31",
+        text = "ECEDEF", textDim = "9098A1", textFaint = "6E757E" } },
     { id = "hush", name = "Hush Original", accent = "3FC7EB" },
     { id = "midnight", name = "Midnight", accent = "7AA2F7", palette = {
         window = "0E1220", sidebar = "0A0E19", field = "141A2B", selected = "1B2338", line = "242D45",
@@ -78,6 +83,13 @@ function Theme:IsBlizzard()
     return self.current ~= nil and self.current.style == "blizzard"
 end
 
+function Theme:IsAllemano()
+    return self.current ~= nil and self.current.style == "allemano"
+end
+
+-- Corner radii of the Allemano theme (UI units).
+Theme.radius = { control = 6, panel = 10, small = 4 }
+
 -- Apply the saved theme (called once, right after SavedVariables load).
 function Theme:ApplyTheme()
     local t = self:GetTheme(Hush.settings and Hush.settings.theme)
@@ -100,7 +112,7 @@ function Theme:Accent()
         local r, g, b = Hush.Compat.ClassColor(Hush.Compat.PlayerClass())
         if r then return r, g, b end
     end
-    return hex(s and s.accent or "3FC7EB")
+    return hex(s and s.accent or "3FD0E0")
 end
 
 Theme.size = {

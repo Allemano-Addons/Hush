@@ -2,7 +2,7 @@
 local addonName, Hush = ...
 
 Hush.name = addonName
-Hush.SCHEMA = 3
+Hush.SCHEMA = 4
 
 -- ---------------------------------------------------------------------------
 -- Printing
@@ -108,7 +108,7 @@ end
 -- ---------------------------------------------------------------------------
 
 local DEFAULT_SETTINGS = {
-    accent = "3FC7EB",
+    accent = "3FD0E0",
     useClassColor = false,
     bgAlpha = 0.95,
     textSize = "M",          -- S / M / L
@@ -130,7 +130,7 @@ local DEFAULT_SETTINGS = {
     font = "auto",           -- "auto" or a font name (game font or LibSharedMedia)
     headingFont = "auto",
     listMode = "categories", -- Whispers tab: "categories" (grouped) or "recent" (newest first)
-    theme = "hush",            -- Settings → Themes (needs /reload)
+    theme = "allemano",        -- Settings → Themes (needs /reload)
     maxMessages = 200,         -- per conversation, oldest dropped first
     groupRetentionDays = 14,   -- delete group chats older than this (0 = keep)
     whisperRetentionDays = 0,  -- delete inactive whisper chats older than this (0 = keep)
@@ -172,6 +172,13 @@ local MIGRATIONS = {
     -- 3: the mini-popup replaces auto-open as the default for incoming whispers.
     [3] = function(db)
         if db.settings then db.settings.incomingAction = "popup" end
+    end,
+    -- 4: the Allemano theme replaces Hush Original as the default look (other themes kept).
+    [4] = function(db)
+        local s = db.settings
+        if not s then return end
+        if s.theme == nil or s.theme == "hush" then s.theme = "allemano" end
+        if s.accent == nil or strupper(s.accent) == "3FC7EB" then s.accent = "3FD0E0" end
     end,
 }
 

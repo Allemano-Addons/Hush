@@ -226,3 +226,8 @@ Found with `/hush report`:
 
 ## 0.1.29 – 2026-09-28
 - New Hush logo (Allemano Addons family): `Media/wow/icon.tga` in the addon list, `Media/wow/mark.tga` on the launcher button in its own colors (the drawn speech bubble stays as fallback). Old `Media/logo.tga` / `Logo.png` removed; `Media/png` and `Media/svg` are the source pictures.
+
+## 0.1.30 – 2026-09-29
+- New **Allemano** theme, now the default (the look of the Allemano Addons website): neutral near-black colors, accent `3FD0E0`, rounded corners on windows, popups, menus, tooltips, fields, buttons, dropdowns, toggles, badges, list selection, portraits and message bubbles; the Hush mark and "Hush" in the title; the active tab in the accent color instead of an underline; round status dots. Only the look changes – every feature, setting and chat stays the same.
+- Existing installs on Hush Original (and the old default accent `3FC7EB`) switch to Allemano once (schema 4). Hush Original, Midnight, Graphite, Horde, Alliance and Blizzard Style are still under Settings → Themes and look exactly as before.
+- `Widgets`: `W.Round(texture, radius)` / `W.RoundBorder(border, radius)` round an existing flat texture or border in the Allemano theme (no-ops in other themes); corner textures in `Media/ui`. Modules (Feed, LFG, Recruit) get the rounded windows and controls automatically.
