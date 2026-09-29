@@ -114,6 +114,7 @@ local DEFAULT_SETTINGS = {
     textSize = "M",          -- S / M / L
     msgStyle = "compact",    -- compact / bubbles
     portraits = true,
+    listPortraits = true,    -- initials next to each chat in the list
     timestamps = true,
     hideWhispers = true,     -- hide whispers in the default chat (never while in combat)
     hideInCombat = true,     -- hide the Hush window while in combat

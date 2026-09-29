@@ -221,7 +221,8 @@ local function buildAppearance(p)
     p:Segment("Message style", nil,
         { { value = "compact", label = "Compact" }, { value = "bubbles", label = "Bubbles" } },
         get("msgStyle"), set("msgStyle"))
-    p:Toggle("Show portraits", "Initials in class color next to messages.", get("portraits"), set("portraits"))
+    p:Toggle("Show portraits in chats", "Initials in class color next to messages.", get("portraits"), set("portraits"))
+    p:Toggle("Show portraits in the list", "Initials next to each chat in the list. Off: the online dot sits before the name.", get("listPortraits"), set("listPortraits"))
     p:Toggle("Show timestamps", "24-hour time next to each sender.", get("timestamps"), set("timestamps"))
 end
 

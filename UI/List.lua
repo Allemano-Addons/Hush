@@ -261,19 +261,21 @@ local function createRow()
     W.Round(r.dotRing, 5)
 
     r.name = W.Text(r, "semibold", 0)
-    r.name:SetPoint("TOPLEFT", r.box, "TOPRIGHT", 10, -1)
-
     r.time = W.Text(r, "regular", -2, "textFaint")
     r.time:SetPoint("TOPRIGHT", -S.padding, -12)
     r.time:SetJustifyH("RIGHT")
-    r.name:SetPoint("TOPRIGHT", r, "TOPRIGHT", -(S.padding + 64), -12)
+
+    -- Without portraits the status dot sits in front of the name.
+    r.plainDot = r:CreateTexture(nil, "OVERLAY")
+    r.plainDot:SetSize(8, 8)
+    r.plainDot:SetPoint("RIGHT", r.name, "LEFT", -6, 0)
+    W.Round(r.plainDot, 4)
 
     r.badge = W.Badge(r)
     r.badge:SetPoint("BOTTOMRIGHT", -S.padding, 10)
 
     r.preview = W.Text(r, "regular", -1, "textDim")
-    r.preview:SetPoint("BOTTOMLEFT", r.box, "BOTTOMRIGHT", 10, 1)
-    r.preview:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -(S.padding + 36), 12)
+    r.portraits = nil -- layout applied in fillRow (depends on settings.listPortraits)
 
     r:SetScript("OnEnter", function(self) self.hover:Show() end)
     r:SetScript("OnLeave", function(self) self.hover:Hide() end)
@@ -289,10 +291,26 @@ local function createRow()
     return r
 end
 
+-- Portraits on (initial in a box) or off (text starts at the left, dot before the name).
+local function layoutRow(r, portraits)
+    if r.portraits == portraits then return end
+    r.portraits = portraits
+    r.box:SetShown(portraits)
+    local left = portraits and (S.padding + 30 + 10) or (S.padding + 16)
+    r.name:ClearAllPoints()
+    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", left, -12)
+    r.name:SetPoint("TOPRIGHT", r, "TOPRIGHT", -(S.padding + 64), -12)
+    r.preview:ClearAllPoints()
+    r.preview:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", left, 12)
+    r.preview:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -(S.padding + 36), 12)
+end
+
 local function fillRow(r, it)
     local conv = it.conv
     r.key = it.key
     r.catId = it.catId
+    local portraits = Hush.settings.listPortraits ~= false
+    layoutRow(r, portraits)
     local selected = it.key == List.selected
     r.sel:SetShown(selected)
     r.bar:SetShown(selected and not Theme:IsAllemano())
@@ -312,10 +330,14 @@ local function fillRow(r, it)
     local dr, dg, db = List.StatusColor(conv)
     if dr then
         r.dot:SetColorTexture(dr, dg, db, 1)
-        r.dotRing:SetColorTexture(Theme:Color(selected and "selected" or "sidebar"))
+        r.plainDot:SetColorTexture(dr, dg, db, 1)
+        -- The ring matches what is behind the row (Allemano has no separate sidebar color).
+        local behind = selected and "selected" or (Theme:IsAllemano() and "window" or "sidebar")
+        r.dotRing:SetColorTexture(Theme:Color(behind))
     end
-    r.dot:SetShown(dr ~= nil)
-    r.dotRing:SetShown(dr ~= nil)
+    r.dot:SetShown(dr ~= nil and portraits)
+    r.dotRing:SetShown(dr ~= nil and portraits)
+    r.plainDot:SetShown(dr ~= nil and not portraits)
 
     r.time:SetText(List.FormatTime(conv.last))
     r.preview:SetText(conv.preview ~= "" and conv.preview or " ")
@@ -608,6 +630,7 @@ end, "List")
 
 Hush:RegisterCallback("SETTINGS_CHANGED", function(_, key)
     if key == "listMode" then offset = 0; List.Refresh() end
+    if key == "listPortraits" then List.Refresh() end
 end, "List")
 
 Hush:RegisterCallback("VIEW_CHANGED", function() offset = 0; List.Refresh() end, "List")
