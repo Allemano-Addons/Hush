@@ -6,6 +6,133 @@
 ## 0.1.32 – 2026-09-30
 - The launcher button's mark is a little larger, like AltBoard's and the other Allemano addons.
 
+## 0.1.31 – 2026-09-29
+- New option Settings → Appearance → **Show portraits in the list** (on by default): turn it off to drop the initial boxes next to each chat in the list; the online dot then sits in front of the name. The old "Show portraits" is now "Show portraits in chats" (messages only, unchanged).
+- Allemano: the ring around the online dot matches the window color.
+
+## 0.1.30 – 2026-09-29
+- New **Allemano** theme, now the default (the look of the Allemano Addons website): neutral near-black colors, accent `3FD0E0`, rounded corners on windows, popups, menus, tooltips, fields, buttons, dropdowns, toggles, badges, list selection, portraits and message bubbles; the Hush mark and "Hush" in the title; the active tab in the accent color instead of an underline; round status dots. Only the look changes – every feature, setting and chat stays the same.
+- Existing installs on Hush Original (and the old default accent `3FC7EB`) switch to Allemano once (schema 4). Hush Original, Midnight, Graphite, Horde, Alliance and Blizzard Style are still under Settings → Themes and look exactly as before.
+- `Widgets`: `W.Round(texture, radius)` / `W.RoundBorder(border, radius)` round an existing flat texture or border in the Allemano theme (no-ops in other themes); corner textures in `Media/ui`. Modules (Feed, LFG, Recruit) get the rounded windows and controls automatically.
+
+## 0.1.29 – 2026-09-28
+- New Hush logo (Allemano Addons family): `Media/wow/icon.tga` in the addon list, `Media/wow/mark.tga` on the launcher button in its own colors (the drawn speech bubble stays as fallback). Old `Media/logo.tga` / `Logo.png` removed; `Media/png` and `Media/svg` are the source pictures.
+
+## 0.1.28 – 2026-09-27
+- Module API: `Hush.OpenWhisper(name, text)` puts a draft in the empty input (for Hush LFG's "Ask to join"; never sent by itself), `Hush.RequestInvite(name)` asks a group leader for an invite.
+
+## 0.1.27 – 2026-09-27
+- Module API: `Hush.OpenWhisper(name)`; new title-button icon `list` (for Hush Feed).
+
+## 0.1.26 – 2026-09-27
+- `/hush report clear` empties the recorded error list.
+
+## 0.1.25 – 2026-09-27
+Found with `/hush report`:
+- Fix: registering the old Classic event `PARTY_MEMBERS_CHANGED` errors on WoW Forever, which stopped the rest of the group setup at login (the group session check did not run). Events the client does not know are now skipped.
+- Fix: a font change at login (e.g. a LibSharedMedia font) tried to refresh the conversation view before the window existed.
+
+## 0.1.24 – 2026-09-27
+- **Safety net**: every event handler, callback and slash command runs protected, so an error in one part never stops the others (whispers are always saved). The default-chat filters fall back to showing the message if they fail. The last 10 Hush errors are kept (also across reloads) and still go to the normal error display.
+- **`/hush report`** (also Settings > General > Report a problem): a window with version, client, locale, screen, theme and key settings, data counts, client features, loaded addons and recent Hush errors, pre-selected for Ctrl+C.
+- Addon list icon: own Hush logo (`Media/logo.tga`).
+- Dev: `/hush testerror`.
+
+## 0.1.23 – 2026-09-27
+- Fix: the theme "Reload" button still did nothing. Like EllesmereUI, the /reload button is now an `InsecureActionButtonTemplate` *inside* the dialog button (it moves and raises with it); before it floated above it, and the settings window raised itself over it on the press.
+
+## 0.1.22 – 2026-09-27
+- Fix: "Reload" after picking a theme still did nothing. Dialog buttons with a protected action now use the method EllesmereUI uses on WoW Forever: `InsecureActionButtonTemplate`, mouse-up only (`useOnKeyDown = false`), so the dialog closing on the press can no longer swallow the action.
+- Visible texts use ">" instead of "→" (Friz Quadrata has no arrow glyph).
+- Removed the temporary `/hush texturetest`.
+
+## 0.1.21 – 2026-09-27
+- **Blizzard Style** theme: the main window, settings and the Recruit ad panel get the classic dark dialog background with the stone border drawn above the content; popups, notices, menus, tooltips and the launcher get the Blizzard tooltip frame; buttons become the red panel buttons with gold text; titles are gold and headings use Friz Quadrata. Everything is gated by `Theme:IsBlizzard()`, so the other themes are unchanged.
+- Widgets: `W.SkinPanel(frame, opts)` and `W.SkinButton(button)` (do nothing unless Blizzard Style is active).
+
+## 0.1.20 – 2026-09-27
+- Fix: "Reload" in the theme dialog did nothing (`ReloadUI()` is blocked for addons on WoW Forever). It now runs `/reload` through a secure button. Dialogs accept a `macro` option for this.
+
+## 0.1.19 – 2026-09-27
+- **Themes** (Settings → Themes): Hush Original (default, unchanged), Midnight, Graphite, Horde and Alliance. A theme swaps the base palette and suggests an accent color; it is applied once at load, so switching asks for a UI reload and costs nothing while playing. Cards show a palette preview and which theme is active.
+- `/hush texturetest` (temporary): checks that the classic Blizzard textures exist on this client, for the upcoming "Blizzard Style" theme.
+
+## 0.1.18 – 2026-09-27
+- Fix: characters sharing a first name (e.g. "Allemano Moo" and "Allemano Mu" – WoW Forever has surnames and first names are not unique) shared one storage bucket, so an alt showed the main's chats and the character selector never appeared. Characters are now stored by full name (first name + surname) and realm.
+- The old shared bucket is not deleted or guessed: it shows as "<name> (older data)" in the selector (read-only), and Settings → Storage → Other characters has **Merge here** to move it into the character you are playing (chats, categories, saved messages, recruit data). A reminder is printed at login until it is merged or forgotten.
+- Your own name uses the full name everywhere: your party/raid messages count as yours again, and "Reply as" shows the full name.
+- Fix: merging conversations no longer errors when neither has a creation time.
+
+## 0.1.17 – 2026-09-27
+- **Alt characters**: a character selector under the title (only when more than one character has Hush data) with your character, **All characters** and each alt in class color.
+- Other characters' chats are read-only (keys `@Name-Realm|...`): no input, no module buttons, only "Copy text" on messages. A bar offers **Reply as <you>**, which opens or starts the chat on the character you are playing; the alt's history stays where it is.
+- **All characters** lists every chat from all characters, newest first, with a small character tag, and search covers them all – the Saved tab too.
+- Storage cleanup now runs over all characters at login, and the usage numbers cover all of them. Settings → Storage → Other characters shows each alt's chats, messages and last login, with **Forget** (deletes that character's Hush history).
+- Events `VIEW_CHANGED`, `CHARACTERS_CHANGED`.
+
+## 0.1.16 – 2026-09-27
+- Popup: if the newest line is a system reply (player not found, AFK, DND) it is shown in the popup in the same color as in Hush, so it is clear why a reply did not arrive.
+
+## 0.1.15 – 2026-09-27
+- **Mini-popup** for incoming whispers (`UI/Popup.lua`): a 320 px window in a corner with the sender's name in class color, the last 1–3 messages (your replies as "You: …") and a reply field. Click the field to type (it never takes the keyboard by itself), Enter sends and marks the chat read; `/r` in the default chat also updates it. Click the name to open the conversation in Hush. Links are clickable.
+- Fades after N seconds; hovering or typing keeps it open, with a short grace period after. Max 3 stacked from the corner (newest nearest), the rest wait in "+N more" (click opens Hush). The same person again updates their popup.
+- No popups in combat (the combat summary covers it), for the conversation already open in Hush, or (by default) for group chat. Unknown players (Requests) do get popups by default.
+- Settings → Behavior → **On incoming whisper**: Popup (default) / Open Hush / Nothing – replaces auto-open (schema 3 switches existing installs to Popup). Settings → Notifications → Popup: corner, duration (4–20 s), popups for Requests, popups for group chat, preview. "Unlock & move" also moves the popups.
+
+## 0.1.14 – 2026-09-27
+- Saved messages: right-click a message → **Save message** (or Remove from saved). Saved messages are independent copies in the new **Saved** tab, one entry per person/group, shown like a conversation with dates. They survive deleting the conversation and the storage cleanup. Saved messages are marked with a thin accent bar and "Saved" next to the time.
+- Right-click a message → **Copy text** (links as plain "[Name]", ready for Ctrl+C).
+- Saved tab: right-click an entry for "Open conversation" and "Delete all saved".
+- Events `SAVED_CHANGED`, `MESSAGE_CONTEXT`.
+
+## 0.1.13 – 2026-09-27
+- Settings → Storage: messages per chat (50/100/200/500), delete group chats after N days (default 14), delete inactive whisper chats after N days (default off), usage stats and "Clean up now". Rules run once at login; pinned chats, unread chats, active groups and chats protected by modules are never removed.
+- Module API: `Hush.AddRetentionGuard(fn, owner)`.
+
+## 0.1.12 – 2026-09-27
+- Dialogs: `maxLetters` (default 40) and `allowEmpty` options, so notes can be longer and cleared.
+
+## 0.1.11 – 2026-09-27
+- Header layout: the info line reads naturally – "Level 10 Priest · <Guild> · Zone" with the class name in its class color. Module info (e.g. a recruit note) gets its own line with a thin accent bar; the header only grows when there is one, and long notes are cut with "...".
+
+## 0.1.10 – 2026-09-27
+- Removed secure `macro` support for header buttons: it did not work reliably. Protected actions such as guild invites stay in the chat right-click menu (where they work).
+
+## 0.1.9 – 2026-09-27
+- Fix: secure buttons for header actions (Recruit's Invite) were placed before the header had its new layout, so clicking did nothing. Placement now waits one frame; a pending placement is cancelled if the button hides or moves.
+- Unsent text is kept per conversation: switching chats saves the draft and restores it when you come back (for the session).
+
+## 0.1.8 – 2026-09-27
+- Fix: keys stopped working while Hush was open. The secure buttons for guild invites (0.1.6) were anchored to Hush frames, which made them protected and blocked Hush's keyboard handling. Secure buttons are now placed at their button's screen position instead of being anchored (hidden while a window is moved or resized, re-placed afterwards).
+- Hush no longer captures the keyboard at all: ESC closes the window and the settings through the game's own `UISpecialFrames`. This needs the window names `HushFrame` and `HushSettingsFrame` (the only new globals).
+
+## 0.1.7 – 2026-09-27
+- Option Settings → Behavior → Chat list: **Categories** (grouped, as before) or **Recent** (Pinned on top, then all chats newest first regardless of category). Categories keep working in the background; in Recent, drag and drop only pins/unpins.
+
+## 0.1.6 – 2026-09-27
+- Fix: "Guild invite" failed with "Interface action failed because of an addon" – guild invites are protected on WoW Forever. It now runs `/ginvite <name>` through an invisible secure button over the menu item (not available in combat, shown as "(not in combat)").
+- Module API: menu items and header buttons accept `macro` for protected actions; header overlays are re-armed when the window opens and after combat.
+
+## 0.1.5 – 2026-09-27
+- Fix: a conversation started with "+" using different letter case ("whissel ljud") and the server's spelling ("Whissel Ljud") became two chats, so sent messages ended up in the other one. Names are now matched ignoring case: the server's spelling wins and case duplicates are merged (messages, category, pin and module data). Existing duplicates are merged at login.
+- "+ New message" capitalizes every part of the name (surnames on WoW Forever).
+- New event `CONV_RENAMED(oldKey, newKey)`.
+
+## 0.1.4 – 2026-09-27
+- Module API: `Hush.AddHeaderInfo(fn, owner)` adds text to the header info line.
+
+## 0.1.3 – 2026-09-27
+- Module API: `Hush.SplitMessage(text)`.
+
+## 0.1.2 – 2026-09-27
+- Module API (additive, `apiVersion` stays 1): `Hush.AddTitleButton`, `Hush.AddLauncherMenuItems`, `Hush.IsGuildMember`, `Hush.CanGuildInvite`, `Hush.GuildInvite`, `Hush.InviteToGroup`. New icons: `person`, `megaphone`.
+
+## 0.1.1 – 2026-09-27
+- Font choice in Settings → Appearance: separate "Text font" and "Heading font" dropdowns. Lists the game fonts plus fonts other addons share through LibSharedMedia (e.g. EllesmereUI's Expressway, Barlow Condensed, Poppins), but only those that actually load on this client; each name is previewed in its own font. Hush does not bundle LibSharedMedia.
+- "Automatic" (default): game font for text, Barlow Condensed for headings when another addon provides it.
+- New dropdown widget; menus can open below a button and preview fonts. Settings panel is taller (620 px).
+- `/hush debug` shows the fonts in use.
+
 ## 0.1.0 – 2026-09-27
 
 ### Step 1 – Skeleton
@@ -114,130 +241,3 @@
 ### Wrap-up
 - Dev mode: test and diagnostic commands (`dump`, `fake`, `fakemany`, `fakeconvo`, `fakegroup`, `clearfake`, `read`, `move`, `toasttest`, `api`) are hidden and blocked unless `/hush dev` is on (saved).
 - Scrollbar dragging stops safely even if the mouse button is released outside the game.
-
-## 0.1.1 – 2026-09-27
-- Font choice in Settings → Appearance: separate "Text font" and "Heading font" dropdowns. Lists the game fonts plus fonts other addons share through LibSharedMedia (e.g. EllesmereUI's Expressway, Barlow Condensed, Poppins), but only those that actually load on this client; each name is previewed in its own font. Hush does not bundle LibSharedMedia.
-- "Automatic" (default): game font for text, Barlow Condensed for headings when another addon provides it.
-- New dropdown widget; menus can open below a button and preview fonts. Settings panel is taller (620 px).
-- `/hush debug` shows the fonts in use.
-
-## 0.1.2 – 2026-09-27
-- Module API (additive, `apiVersion` stays 1): `Hush.AddTitleButton`, `Hush.AddLauncherMenuItems`, `Hush.IsGuildMember`, `Hush.CanGuildInvite`, `Hush.GuildInvite`, `Hush.InviteToGroup`. New icons: `person`, `megaphone`.
-
-## 0.1.3 – 2026-09-27
-- Module API: `Hush.SplitMessage(text)`.
-
-## 0.1.4 – 2026-09-27
-- Module API: `Hush.AddHeaderInfo(fn, owner)` adds text to the header info line.
-
-## 0.1.5 – 2026-09-27
-- Fix: a conversation started with "+" using different letter case ("whissel ljud") and the server's spelling ("Whissel Ljud") became two chats, so sent messages ended up in the other one. Names are now matched ignoring case: the server's spelling wins and case duplicates are merged (messages, category, pin and module data). Existing duplicates are merged at login.
-- "+ New message" capitalizes every part of the name (surnames on WoW Forever).
-- New event `CONV_RENAMED(oldKey, newKey)`.
-
-## 0.1.6 – 2026-09-27
-- Fix: "Guild invite" failed with "Interface action failed because of an addon" – guild invites are protected on WoW Forever. It now runs `/ginvite <name>` through an invisible secure button over the menu item (not available in combat, shown as "(not in combat)").
-- Module API: menu items and header buttons accept `macro` for protected actions; header overlays are re-armed when the window opens and after combat.
-
-## 0.1.7 – 2026-09-27
-- Option Settings → Behavior → Chat list: **Categories** (grouped, as before) or **Recent** (Pinned on top, then all chats newest first regardless of category). Categories keep working in the background; in Recent, drag and drop only pins/unpins.
-
-## 0.1.8 – 2026-09-27
-- Fix: keys stopped working while Hush was open. The secure buttons for guild invites (0.1.6) were anchored to Hush frames, which made them protected and blocked Hush's keyboard handling. Secure buttons are now placed at their button's screen position instead of being anchored (hidden while a window is moved or resized, re-placed afterwards).
-- Hush no longer captures the keyboard at all: ESC closes the window and the settings through the game's own `UISpecialFrames`. This needs the window names `HushFrame` and `HushSettingsFrame` (the only new globals).
-
-## 0.1.9 – 2026-09-27
-- Fix: secure buttons for header actions (Recruit's Invite) were placed before the header had its new layout, so clicking did nothing. Placement now waits one frame; a pending placement is cancelled if the button hides or moves.
-- Unsent text is kept per conversation: switching chats saves the draft and restores it when you come back (for the session).
-
-## 0.1.10 – 2026-09-27
-- Removed secure `macro` support for header buttons: it did not work reliably. Protected actions such as guild invites stay in the chat right-click menu (where they work).
-
-## 0.1.11 – 2026-09-27
-- Header layout: the info line reads naturally – "Level 10 Priest · <Guild> · Zone" with the class name in its class color. Module info (e.g. a recruit note) gets its own line with a thin accent bar; the header only grows when there is one, and long notes are cut with "...".
-
-## 0.1.12 – 2026-09-27
-- Dialogs: `maxLetters` (default 40) and `allowEmpty` options, so notes can be longer and cleared.
-
-## 0.1.13 – 2026-09-27
-- Settings → Storage: messages per chat (50/100/200/500), delete group chats after N days (default 14), delete inactive whisper chats after N days (default off), usage stats and "Clean up now". Rules run once at login; pinned chats, unread chats, active groups and chats protected by modules are never removed.
-- Module API: `Hush.AddRetentionGuard(fn, owner)`.
-
-## 0.1.14 – 2026-09-27
-- Saved messages: right-click a message → **Save message** (or Remove from saved). Saved messages are independent copies in the new **Saved** tab, one entry per person/group, shown like a conversation with dates. They survive deleting the conversation and the storage cleanup. Saved messages are marked with a thin accent bar and "Saved" next to the time.
-- Right-click a message → **Copy text** (links as plain "[Name]", ready for Ctrl+C).
-- Saved tab: right-click an entry for "Open conversation" and "Delete all saved".
-- Events `SAVED_CHANGED`, `MESSAGE_CONTEXT`.
-
-## 0.1.15 – 2026-09-27
-- **Mini-popup** for incoming whispers (`UI/Popup.lua`): a 320 px window in a corner with the sender's name in class color, the last 1–3 messages (your replies as "You: …") and a reply field. Click the field to type (it never takes the keyboard by itself), Enter sends and marks the chat read; `/r` in the default chat also updates it. Click the name to open the conversation in Hush. Links are clickable.
-- Fades after N seconds; hovering or typing keeps it open, with a short grace period after. Max 3 stacked from the corner (newest nearest), the rest wait in "+N more" (click opens Hush). The same person again updates their popup.
-- No popups in combat (the combat summary covers it), for the conversation already open in Hush, or (by default) for group chat. Unknown players (Requests) do get popups by default.
-- Settings → Behavior → **On incoming whisper**: Popup (default) / Open Hush / Nothing – replaces auto-open (schema 3 switches existing installs to Popup). Settings → Notifications → Popup: corner, duration (4–20 s), popups for Requests, popups for group chat, preview. "Unlock & move" also moves the popups.
-
-## 0.1.16 – 2026-09-27
-- Popup: if the newest line is a system reply (player not found, AFK, DND) it is shown in the popup in the same color as in Hush, so it is clear why a reply did not arrive.
-
-## 0.1.17 – 2026-09-27
-- **Alt characters**: a character selector under the title (only when more than one character has Hush data) with your character, **All characters** and each alt in class color.
-- Other characters' chats are read-only (keys `@Name-Realm|...`): no input, no module buttons, only "Copy text" on messages. A bar offers **Reply as <you>**, which opens or starts the chat on the character you are playing; the alt's history stays where it is.
-- **All characters** lists every chat from all characters, newest first, with a small character tag, and search covers them all – the Saved tab too.
-- Storage cleanup now runs over all characters at login, and the usage numbers cover all of them. Settings → Storage → Other characters shows each alt's chats, messages and last login, with **Forget** (deletes that character's Hush history).
-- Events `VIEW_CHANGED`, `CHARACTERS_CHANGED`.
-
-## 0.1.18 – 2026-09-27
-- Fix: characters sharing a first name (e.g. "Allemano Moo" and "Allemano Mu" – WoW Forever has surnames and first names are not unique) shared one storage bucket, so an alt showed the main's chats and the character selector never appeared. Characters are now stored by full name (first name + surname) and realm.
-- The old shared bucket is not deleted or guessed: it shows as "<name> (older data)" in the selector (read-only), and Settings → Storage → Other characters has **Merge here** to move it into the character you are playing (chats, categories, saved messages, recruit data). A reminder is printed at login until it is merged or forgotten.
-- Your own name uses the full name everywhere: your party/raid messages count as yours again, and "Reply as" shows the full name.
-- Fix: merging conversations no longer errors when neither has a creation time.
-
-## 0.1.19 – 2026-09-27
-- **Themes** (Settings → Themes): Hush Original (default, unchanged), Midnight, Graphite, Horde and Alliance. A theme swaps the base palette and suggests an accent color; it is applied once at load, so switching asks for a UI reload and costs nothing while playing. Cards show a palette preview and which theme is active.
-- `/hush texturetest` (temporary): checks that the classic Blizzard textures exist on this client, for the upcoming "Blizzard Style" theme.
-
-## 0.1.20 – 2026-09-27
-- Fix: "Reload" in the theme dialog did nothing (`ReloadUI()` is blocked for addons on WoW Forever). It now runs `/reload` through a secure button. Dialogs accept a `macro` option for this.
-
-## 0.1.21 – 2026-09-27
-- **Blizzard Style** theme: the main window, settings and the Recruit ad panel get the classic dark dialog background with the stone border drawn above the content; popups, notices, menus, tooltips and the launcher get the Blizzard tooltip frame; buttons become the red panel buttons with gold text; titles are gold and headings use Friz Quadrata. Everything is gated by `Theme:IsBlizzard()`, so the other themes are unchanged.
-- Widgets: `W.SkinPanel(frame, opts)` and `W.SkinButton(button)` (do nothing unless Blizzard Style is active).
-
-## 0.1.22 – 2026-09-27
-- Fix: "Reload" after picking a theme still did nothing. Dialog buttons with a protected action now use the method EllesmereUI uses on WoW Forever: `InsecureActionButtonTemplate`, mouse-up only (`useOnKeyDown = false`), so the dialog closing on the press can no longer swallow the action.
-- Visible texts use ">" instead of "→" (Friz Quadrata has no arrow glyph).
-- Removed the temporary `/hush texturetest`.
-
-## 0.1.23 – 2026-09-27
-- Fix: the theme "Reload" button still did nothing. Like EllesmereUI, the /reload button is now an `InsecureActionButtonTemplate` *inside* the dialog button (it moves and raises with it); before it floated above it, and the settings window raised itself over it on the press.
-
-## 0.1.24 – 2026-09-27
-- **Safety net**: every event handler, callback and slash command runs protected, so an error in one part never stops the others (whispers are always saved). The default-chat filters fall back to showing the message if they fail. The last 10 Hush errors are kept (also across reloads) and still go to the normal error display.
-- **`/hush report`** (also Settings > General > Report a problem): a window with version, client, locale, screen, theme and key settings, data counts, client features, loaded addons and recent Hush errors, pre-selected for Ctrl+C.
-- Addon list icon: own Hush logo (`Media/logo.tga`).
-- Dev: `/hush testerror`.
-
-## 0.1.25 – 2026-09-27
-Found with `/hush report`:
-- Fix: registering the old Classic event `PARTY_MEMBERS_CHANGED` errors on WoW Forever, which stopped the rest of the group setup at login (the group session check did not run). Events the client does not know are now skipped.
-- Fix: a font change at login (e.g. a LibSharedMedia font) tried to refresh the conversation view before the window existed.
-
-## 0.1.26 – 2026-09-27
-- `/hush report clear` empties the recorded error list.
-
-## 0.1.27 – 2026-09-27
-- Module API: `Hush.OpenWhisper(name)`; new title-button icon `list` (for Hush Feed).
-
-## 0.1.28 – 2026-09-27
-- Module API: `Hush.OpenWhisper(name, text)` puts a draft in the empty input (for Hush LFG's "Ask to join"; never sent by itself), `Hush.RequestInvite(name)` asks a group leader for an invite.
-
-## 0.1.29 – 2026-09-28
-- New Hush logo (Allemano Addons family): `Media/wow/icon.tga` in the addon list, `Media/wow/mark.tga` on the launcher button in its own colors (the drawn speech bubble stays as fallback). Old `Media/logo.tga` / `Logo.png` removed; `Media/png` and `Media/svg` are the source pictures.
-
-## 0.1.30 – 2026-09-29
-- New **Allemano** theme, now the default (the look of the Allemano Addons website): neutral near-black colors, accent `3FD0E0`, rounded corners on windows, popups, menus, tooltips, fields, buttons, dropdowns, toggles, badges, list selection, portraits and message bubbles; the Hush mark and "Hush" in the title; the active tab in the accent color instead of an underline; round status dots. Only the look changes – every feature, setting and chat stays the same.
-- Existing installs on Hush Original (and the old default accent `3FC7EB`) switch to Allemano once (schema 4). Hush Original, Midnight, Graphite, Horde, Alliance and Blizzard Style are still under Settings → Themes and look exactly as before.
-- `Widgets`: `W.Round(texture, radius)` / `W.RoundBorder(border, radius)` round an existing flat texture or border in the Allemano theme (no-ops in other themes); corner textures in `Media/ui`. Modules (Feed, LFG, Recruit) get the rounded windows and controls automatically.
-
-## 0.1.31 – 2026-09-29
-- New option Settings → Appearance → **Show portraits in the list** (on by default): turn it off to drop the initial boxes next to each chat in the list; the online dot then sits in front of the name. The old "Show portraits" is now "Show portraits in chats" (messages only, unchanged).
-- Allemano: the ring around the online dot matches the window color.
