@@ -18,6 +18,7 @@ globals = {
 
 -- WoW API used by Hush (read-only). Extend as new APIs are used.
 read_globals = {
+    "issecretvalue",
     "UISpecialFrames",
     -- Lua extensions in WoW
     "strjoin", "strsplit", "strtrim", "strlower", "strupper", "strlen", "strsub", "strfind",

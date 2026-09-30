@@ -193,6 +193,8 @@ end
 -- A failing filter must never hide messages: on error the message is shown as usual.
 local function safeFilter(fn)
     return function(...)
+        -- Secret text can't be read, so Hush has not saved it: always show it.
+        if Compat.HasSecret(...) then return false end
         local ok, hide = pcall(fn, ...)
         if ok then return hide end
         Hush:RecordError("chat filter", hide)

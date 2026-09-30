@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.33 – 2026-09-30
+- Fix for WoW Forever's secret values: in instances and boss fights chat text can be "secret" (addons may not read it). Hush now skips such chat events instead of erroring, and never hides them in the default chat, so the message is shown there as usual. `/hush report` shows how many were skipped this session.
+
 ## 0.1.32 – 2026-09-30
 - The launcher button's mark is a little larger, like AltBoard's and the other Allemano addons.
 

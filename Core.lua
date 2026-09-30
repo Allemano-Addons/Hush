@@ -64,6 +64,8 @@ end
 eventFrame:SetScript("OnEvent", function(_, event, ...)
     local list = eventHandlers[event]
     if not list then return end
+    -- Chat with secret text (see Compat.HasSecret) can't be read: leave it to the default chat.
+    if event:sub(1, 9) == "CHAT_MSG_" and Hush.Compat and Hush.Compat.HasSecret(...) then return end
     for i = 1, #list do
         local ok, err = pcall(list[i], event, ...)
         if not ok then Hush:RecordError(event, err) end
@@ -395,6 +397,7 @@ function Hush.BuildReport()
     for k, v in pairs(C.features) do feats[#feats + 1] = k .. "=" .. (v and "1" or "0") end
     sort(feats)
     add("Features: %s", table.concat(feats, " "))
+    add("Secret chat messages skipped this session: %d", C.secretSkipped or 0)
     local addons = C.LoadedAddOns()
     add("Addons loaded (%d): %s", #addons, table.concat(addons, ", "))
     add("")

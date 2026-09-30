@@ -19,6 +19,23 @@ Compat.features = {
     MouseIsOverGlobal = type(MouseIsOver) == "function",
 }
 
+-- Secret values (Midnight rules, also on WoW Forever): in some situations (instances, boss
+-- fights, combat) event payloads such as chat text can be "secret". Addon code may not read
+-- them - any string operation errors - so such events are skipped and the default chat
+-- shows the message as usual.
+Compat.secretSkipped = 0
+
+function Compat.HasSecret(...)
+    if not issecretvalue then return false end
+    for i = 1, select("#", ...) do
+        if issecretvalue((select(i, ...))) then
+            Compat.secretSkipped = Compat.secretSkipped + 1
+            return true
+        end
+    end
+    return false
+end
+
 -- ---------------------------------------------------------------------------
 -- Names
 -- ---------------------------------------------------------------------------
