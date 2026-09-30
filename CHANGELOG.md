@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.32 – 2026-09-30
+- The launcher button's mark is a little larger, like AltBoard's and the other Allemano addons.
+
 ## 0.1.0 – 2026-09-27
 
 ### Step 1 – Skeleton
