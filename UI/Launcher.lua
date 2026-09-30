@@ -78,8 +78,8 @@ local function build()
     -- The Hush mark (Media/wow/mark.tga) in its own colors; if it does not load, a speech
     -- bubble drawn from two accent-colored rectangles.
     local mark = button:CreateTexture(nil, "ARTWORK")
-    mark:SetPoint("TOPLEFT", 3, -3)
-    mark:SetPoint("BOTTOMRIGHT", -3, 3)
+    mark:SetPoint("TOPLEFT", 2, -2)
+    mark:SetPoint("BOTTOMRIGHT", -2, 2)
     if mark:SetTexture("Interface\\AddOns\\Hush\\Media\\wow\\mark") == false then
         mark:Hide()
         local bubble = button:CreateTexture(nil, "ARTWORK")
