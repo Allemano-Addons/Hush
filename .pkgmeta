@@ -1,0 +1,12 @@
+package-as: Hush
+
+ignore:
+  - .luacheckrc
+  - .gitattributes
+  - .github
+  - Media/png
+  - Media/svg
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
