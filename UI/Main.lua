@@ -211,6 +211,26 @@ local function buildSidebar()
     end
     frame.titleText = name
 
+    -- Status dot next to the name: color = your status, click to change it.
+    local statusBtn = CreateFrame("Button", nil, title)
+    statusBtn:SetSize(18, 18)
+    statusBtn:SetPoint("LEFT", name, "RIGHT", 6, 0)
+    statusBtn.dot = statusBtn:CreateTexture(nil, "ARTWORK")
+    statusBtn.dot:SetSize(8, 8)
+    statusBtn.dot:SetPoint("CENTER")
+    if W.Round then W.Round(statusBtn.dot, 4) end
+    local function updateStatus()
+        local id = Hush.Status.Effective()
+        local def = Hush.Status.Def(id)
+        statusBtn.dot:SetColorTexture(def.color[1], def.color[2], def.color[3], 1)
+        statusBtn.tip = "Status: " .. def.label .. (id ~= Hush.Status.Base() and " (automatic)" or "") .. "  ·  click to change"
+    end
+    statusBtn:SetScript("OnClick", function(self) W.OpenMenu(Hush.Status.MenuItems(), self) end)
+    statusBtn:SetScript("OnEnter", function(self) W.ShowTooltip(self, self.tip) end)
+    statusBtn:SetScript("OnLeave", function() W.HideTooltip() end)
+    Hush:RegisterCallback("STATUS_CHANGED", updateStatus, "Main")
+    updateStatus()
+
     local settingsBtn = W.IconButton(title, "settings", 22, "Settings", function()
         Hush:Fire("OPEN_SETTINGS")
     end, "=")

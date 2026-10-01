@@ -35,7 +35,7 @@ read_globals = {
     "GetBuildInfo", "GetTime", "GetAddOnMetadata", "C_AddOns", "C_Timer", "C_ChatInfo",
     "C_FriendList", "C_BattleNet", "C_GuildInfo",
     "GetPhysicalScreenSize", "GetScreenResolutions", "GetCurrentResolution",
-    "UnitName", "UnitClass", "UnitAffectingCombat", "InCombatLockdown",
+    "UnitName", "UnitClass", "UnitAffectingCombat", "InCombatLockdown", "UnitIsAFK", "UnitIsDND", "IsInInstance",
     "GetRealmName", "GetNormalizedRealmName", "GetPlayerInfoByGUID",
     "Ambiguate", "BNGetFriendInfoByID", "RAID_CLASS_COLORS", "CUSTOM_CLASS_COLORS",
     "LOCALIZED_CLASS_NAMES_MALE", "LOCALIZED_CLASS_NAMES_FEMALE",

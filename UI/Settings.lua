@@ -344,6 +344,56 @@ local function buildNotifications(p)
     p:Button("Preview", nil, "Show", "default", function() Hush.Popup.Preview() end)
 end
 
+local function buildStatus(p)
+    local Status = Hush.Status
+    local function setAndApply(key)
+        return function(v)
+            Settings.Set(key, v)
+            Status.Refresh()
+        end
+    end
+    local options = {}
+    for _, def in ipairs(Status.LIST) do options[#options + 1] = { value = def.id, label = def.label } end
+    p:Segment("Status", "Also: the dot next to \"Hush\", the launcher menu, /hush status away.",
+        options, function() return Status.Base() end, function(v) Status.Set(v) end)
+    p:Toggle("Raid status in raids", "Switches on by itself inside a raid instance.",
+        get("statusAutoRaid"), setAndApply("statusAutoRaid"))
+    p:Toggle("Combat status in combat", "Switches on by itself while you are in combat.",
+        get("statusAutoCombat"), setAndApply("statusAutoCombat"))
+    p:Toggle("Use the game's AFK / DND", "Away, Busy and Raid set it with your text: the server answers, also in boss fights.",
+        get("statusGameFlags"), setAndApply("statusGameFlags"))
+    p:Toggle("Hush answers too", "Where the game's flag is not on (Combat, Battle.net). Once per person every 5 minutes.",
+        get("statusHushReply"), setAndApply("statusHushReply"))
+
+    p:Header("Answers")
+    local rows = {}
+    for _, def in ipairs(Status.LIST) do
+        if def.text then rows[#rows + 1] = def end
+    end
+    p:Custom(#rows * 34, function(c)
+        local boxes = {}
+        for i, def in ipairs(rows) do
+            local label = W.Text(c, "semibold", 0, "textDim")
+            label:SetPoint("TOPLEFT", 0, -(i - 1) * 34 - 6)
+            label:SetText(def.label)
+            local e = W.EditBox(c, def.text, 28)
+            e:SetPoint("TOPLEFT", 70, -(i - 1) * 34)
+            e:SetPoint("TOPRIGHT", 0, -(i - 1) * 34)
+            e:SetMaxLetters(200)
+            e:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+            e:HookScript("OnEditFocusLost", function(self)
+                Status.SetText(def.id, self:GetText())
+                Status.Refresh()
+            end)
+            boxes[def.id] = e
+        end
+        return function()
+            for id, box in pairs(boxes) do box:SetText(Status.Text(id)) end
+        end
+    end)
+    p:Text("Leave an answer empty for no answer. Notifications are the same in every status.")
+end
+
 local function buildQuickReplies(p)
     p:Text("Up to 10 replies, shown as buttons above the message field. {name} is replaced with the "
         .. "other player's name. Click fills the field, shift-click sends.")
@@ -693,6 +743,7 @@ Settings.AddPage({ id = "appearance", label = "Appearance", build = buildAppeara
 Settings.AddPage({ id = "themes", label = "Themes", build = buildThemes })
 Settings.AddPage({ id = "behavior", label = "Behavior", build = buildBehavior })
 Settings.AddPage({ id = "notifications", label = "Notifications", build = buildNotifications })
+Settings.AddPage({ id = "status", label = "Status", build = buildStatus })
 Settings.AddPage({ id = "quickreplies", label = "Quick replies", build = buildQuickReplies })
 Settings.AddPage({ id = "storage", label = "Storage", build = buildStorage })
 

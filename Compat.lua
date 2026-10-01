@@ -251,6 +251,30 @@ function Compat.Send(conv, text)
     return false
 end
 
+-- The game's own AFK / DND flag ("/afk text", "/dnd text"). It toggles: sending it again
+-- switches the flag off. flag = "AFK" or "DND".
+function Compat.SendFlag(flag, text)
+    sendChat(text or "", flag)
+end
+
+-- Is your AFK / DND flag on? A secret value can't be tested (in combat): unknown counts as off.
+function Compat.HasFlag(flag)
+    local v
+    if flag == "AFK" then v = UnitIsAFK("player") elseif flag == "DND" then v = UnitIsDND("player") end
+    if issecretvalue and issecretvalue(v) then return false end
+    return v and true or false
+end
+
+function Compat.InRaidInstance()
+    local inInstance, kind = IsInInstance()
+    return inInstance and kind == "raid" or false
+end
+
+-- True while the game refuses chat from addons (boss fights and the like).
+function Compat.ChatLocked()
+    return C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown() and true or false
+end
+
 -- ---------------------------------------------------------------------------
 -- Slash commands typed in the Hush input ("/rw Pull in 5", "/p hi", "/roll", "/w Name hi")
 -- ---------------------------------------------------------------------------

@@ -146,6 +146,7 @@ Getters are called every time the page is shown.
 | `UNREAD_CHANGED` | – |
 | `CATEGORIES_CHANGED` | – |
 | `SETTINGS_CHANGED` | `key, value` |
+| `STATUS_CHANGED` | `statusId` (available, away, busy, raid, combat: what applies now) |
 | `WINDOW_SHOWN` / `WINDOW_HIDDEN` | – |
 | `TAB_CHANGED` | `tab` (`"whispers"`, `"groups"`, `"requests"`) |
 | `SEARCH_CHANGED` | `text` |

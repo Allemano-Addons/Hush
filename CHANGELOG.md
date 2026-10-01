@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.35 – 2026-10-01
+- **Status**: Available, Away, Busy, Raid and Combat, each with its own answer text. Pick it with the dot next to "Hush" in the window, the launcher menu, Settings → Status or `/hush status away` (`back` = Available).
+- Away, Busy and Raid set the game's own AFK / DND with your text, so the server answers every whisper – also in boss fights, where addons can't read chat. Where that flag is not on (Combat, Battle.net whispers, or the option off) Hush answers itself, marked `[Auto-reply]`, at most once per person every 5 minutes.
+- Settings → Status: Raid status by itself inside raid instances, Combat status by itself in combat (both off by default), the two ways of answering on/off, and the answer texts (empty = no answer). Notifications are the same in every status.
+- Typing `/afk` or `/dnd` yourself (or moving after being away) puts Hush back on Available; a flag you set yourself is never switched off by Hush.
+
 ## 0.1.34 – 2026-10-01
 - **Slash commands in the Hush input**: `/rw Pull in 5`, `/p`, `/raid`, `/g`, `/o`, `/s`, `/y`, `/roll`, `/w Name text`, addon commands and so on run like in the normal chat box instead of being sent as text. Start the message with `//` to send text that begins with a slash. Protected commands (`/cast`, `/target`) can't be run by addons.
 - **Web addresses are links**: `https://…`, `www.…` and addresses like `discord.gg/abc` are shown in the accent color in conversations. Click one for a box with the address selected (Ctrl+C), since the game can't open a browser. Item links work as before.

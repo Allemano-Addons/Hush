@@ -43,6 +43,7 @@ local function openMenu()
     local items = {
         { text = Hush.Main.IsShown() and "Close Hush" or "Open Hush", onClick = function() Hush.Main.Toggle() end },
         { text = "Reply to last whisper", onClick = function() Hush.API.ReplyLast() end },
+        { text = "Status: " .. Hush.Status.Def(Hush.Status.Effective()).label, submenu = Hush.Status.MenuItems() },
         { text = "Settings", onClick = function() Hush.Main.Show() Hush:Fire("OPEN_SETTINGS") end },
     }
     for _, fn in ipairs(Launcher.extraItems) do

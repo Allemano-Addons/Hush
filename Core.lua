@@ -138,6 +138,11 @@ local DEFAULT_SETTINGS = {
     groupRetentionDays = 14,   -- delete group chats older than this (0 = keep)
     whisperRetentionDays = 0,  -- delete inactive whisper chats older than this (0 = keep)
     combatToast = true,
+    -- Status (Status.lua). Your own answer texts go in statusTexts[id].
+    statusAutoCombat = false,  -- Combat status while in combat
+    statusAutoRaid = false,    -- Raid status inside a raid instance
+    statusGameFlags = true,    -- Away/Busy/Raid set the game's AFK/DND (the server answers)
+    statusHushReply = true,    -- Hush answers itself where the game's flag is not active
 }
 
 local DEFAULT_QUICK_REPLIES = {
