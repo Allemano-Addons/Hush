@@ -133,6 +133,18 @@ function Menus.CopyText(text)
     })
 end
 
+-- A web address from a message (click on the link).
+function Menus.CopyLink(url)
+    dialog({
+        title = "Copy link",
+        text = "Press Ctrl+C to copy, then Esc. Paste it in your browser.",
+        input = url,
+        maxLetters = 2000,
+        allowEmpty = true,
+        okText = "Done",
+    })
+end
+
 savedSourceItems = function(_, src)
     local items = {}
     if Data.Get(src.convKey) then

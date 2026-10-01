@@ -5,6 +5,7 @@ ignore:
   - .gitattributes
   - .github
   - docs
+  - Tests
   - Media/png
   - Media/svg
 

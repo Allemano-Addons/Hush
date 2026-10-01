@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Hush
 ## Notes: Modern whisper messenger for WoW Forever
-## Version: 0.1.33
+## Version: 0.1.34
 ## Author: Allemano
 ## Category: Chat
 ## X-Curse-Project-ID: 1719062
@@ -13,6 +13,7 @@ Compat.lua
 Theme.lua
 Widgets.lua
 Data.lua
+Links.lua
 Saved.lua
 Chat.lua
 Groups.lua

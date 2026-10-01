@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.34 – 2026-10-01
+- **Slash commands in the Hush input**: `/rw Pull in 5`, `/p`, `/raid`, `/g`, `/o`, `/s`, `/y`, `/roll`, `/w Name text`, addon commands and so on run like in the normal chat box instead of being sent as text. Start the message with `//` to send text that begins with a slash. Protected commands (`/cast`, `/target`) can't be run by addons.
+- **Web addresses are links**: `https://…`, `www.…` and addresses like `discord.gg/abc` are shown in the accent color in conversations. Click one for a box with the address selected (Ctrl+C), since the game can't open a browser. Item links work as before.
+
 ## 0.1.33 – 2026-09-30
 - Fix for WoW Forever's secret values: in instances and boss fights chat text can be "secret" (addons may not read it). Hush now skips such chat events instead of erroring, and never hides them in the default chat, so the message is shown there as usual. `/hush report` shows how many were skipped this session.
 

@@ -50,6 +50,21 @@ end
 local function sendFromField()
     local text = edit:GetText()
     if strtrim(text) == "" then return end
+    -- A slash command ("/rw Pull in 5", "/roll") runs like in the normal chat box; it is
+    -- never sent as a message. "//" at the start sends the text as it is.
+    if text:sub(1, 1) == "/" and text:sub(2, 2) ~= "/" then
+        local ok, handled = pcall(Compat.RunSlash, strtrim(text))
+        if ok and handled then
+            edit:SetText("")
+        elseif not ok then
+            Hush:RecordError("slash command", handled)
+            Hush:Print("That command could not be run from Hush.")
+        else
+            Hush:Print("Unknown command:", (text:match("^(/%S+)")) or text)
+        end
+        return
+    end
+    if text:sub(1, 2) == "//" then text = text:sub(2) end
     if Input.Send(text) ~= false then
         edit:SetText("")
     end

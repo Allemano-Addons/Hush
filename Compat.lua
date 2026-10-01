@@ -251,6 +251,74 @@ function Compat.Send(conv, text)
     return false
 end
 
+-- ---------------------------------------------------------------------------
+-- Slash commands typed in the Hush input ("/rw Pull in 5", "/p hi", "/roll", "/w Name hi")
+-- ---------------------------------------------------------------------------
+
+-- Chat commands Hush sends itself (the rest goes to the game's own chat box).
+local SIMPLE_CHAT = { "SAY", "YELL", "EMOTE", "PARTY", "RAID", "RAID_WARNING", "GUILD", "OFFICER", "INSTANCE_CHAT" }
+
+-- Is cmd ("/rw") one of the game's SLASH_<NAME>1, SLASH_<NAME>2, ... strings?
+local function slashMatches(name, cmd)
+    local i = 1
+    while true do
+        local s = _G["SLASH_" .. name .. i]
+        if type(s) ~= "string" then return false end
+        if strlower(s) == cmd then return true end
+        i = i + 1
+    end
+end
+
+-- Everything else (/w, channels, /dance, ...): let the game's chat box parse and run it.
+local function runViaChatBox(text)
+    local eb = (DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox) or ChatFrame1EditBox
+    if not eb then return false end
+    local wasShown = eb:IsShown()
+    eb:SetText(text)
+    if eb.SendText then
+        eb:SendText()
+    elseif ChatEdit_SendText then
+        ChatEdit_SendText(eb, 0)
+    else
+        eb:SetText("")
+        return false
+    end
+    eb:SetText("")
+    if not wasShown and eb:IsShown() then
+        if ChatFrameUtil and ChatFrameUtil.DeactivateChat then
+            ChatFrameUtil.DeactivateChat(eb)
+        elseif ChatEdit_DeactivateChat then
+            ChatEdit_DeactivateChat(eb)
+        else
+            eb:Hide()
+        end
+    end
+    return true
+end
+
+-- Runs a slash command. Returns true when it was handled. Protected commands (/cast,
+-- /target ...) can't be run by an addon; the game refuses those.
+function Compat.RunSlash(text)
+    local cmd, rest = text:match("^(/%S+)%s*(.-)%s*$")
+    if not cmd then return false end
+    cmd = strlower(cmd)
+    for _, chatType in ipairs(SIMPLE_CHAT) do
+        if slashMatches(chatType, cmd) then
+            if rest ~= "" then sendChat(rest:sub(1, 255), chatType) end
+            return true
+        end
+    end
+    if SlashCmdList then
+        for name, fn in pairs(SlashCmdList) do
+            if type(fn) == "function" and slashMatches(name, cmd) then
+                fn(rest, DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox)
+                return true
+            end
+        end
+    end
+    return runViaChatBox(text)
+end
+
 function Compat.InviteToGroup(name)
     if C_PartyInfo and C_PartyInfo.InviteUnit then
         C_PartyInfo.InviteUnit(name)

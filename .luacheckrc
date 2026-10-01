@@ -1,7 +1,7 @@
 std = "lua51"
 max_line_length = false
 self = false
-exclude_files = { "Media/**" }
+exclude_files = { "Media/**", "Tests/**" }
 
 -- The only globals Hush may write.
 globals = {
@@ -42,7 +42,7 @@ read_globals = {
     "IsInGuild", "GetGuildInfo", "GetNumGuildMembers", "GetGuildRosterInfo", "GuildRoster",
     "LibStub", "ERR_CHAT_PLAYER_NOT_FOUND_S", "ERR_FRIEND_ONLINE_SS", "ERR_FRIEND_OFFLINE_S",
     "SendChatMessage", "BNSendWhisper", "BNGetNumFriends", "BNGetFriendInfo",
-    "ChatFrameUtil", "ChatEdit_SetLastTellTarget", "hooksecurefunc", "IsShiftKeyDown",
+    "ChatFrameUtil", "ChatEdit_SetLastTellTarget", "ChatEdit_SendText", "ChatEdit_DeactivateChat", "ChatFrame1EditBox", "hooksecurefunc", "IsShiftKeyDown",
     "Constants", "MouseIsOver", "MouseIsOver", "IsMouseButtonDown", "InviteUnit", "GuildInvite", "CanGuildInvite", "C_PartyInfo",
     "GetLocale", "GetNumAddOns", "GetAddOnInfo", "IsAddOnLoaded", "IsInRaid", "IsInGroup", "GetNumRaidMembers", "GetNumPartyMembers", "GetNumGroupMembers",
 }

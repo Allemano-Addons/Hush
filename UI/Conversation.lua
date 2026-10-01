@@ -136,11 +136,29 @@ end
 
 local HYPERLINK_TOOLTIP = { item = true, spell = true, enchant = true, quest = true, talent = true, achievement = true }
 
+-- Web addresses are shown as links in the accent color (see Links.lua).
+local function linkified(text)
+    local r, g, b = Theme:Accent()
+    return Hush.Links.Linkify(text, ("%02x%02x%02x"):format(floor(r * 255 + 0.5), floor(g * 255 + 0.5), floor(b * 255 + 0.5)))
+end
+
 local function onHyperlinkClick(_, link, text, button)
+    -- A web address: a box with the address selected, ready for Ctrl+C.
+    local url = Hush.Links.Url(link)
+    if url then
+        if button == "LeftButton" then Hush.Menus.CopyLink(url) end
+        return
+    end
     SetItemRef(link, text, button, DEFAULT_CHAT_FRAME)
 end
 
 local function onHyperlinkEnter(self, link)
+    if Hush.Links.Url(link) then
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetText("Click to copy the link")
+        GameTooltip:Show()
+        return
+    end
     local kind = link:match("^(%a+):")
     if kind and HYPERLINK_TOOLTIP[kind] then
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
@@ -242,7 +260,7 @@ local function fillMsg(f, it)
     f.text:ClearAllPoints()
     f.text:SetWidth(it.textW)
     f.text:SetHeight(it.textH)
-    f.text:SetText(m.m)
+    f.text:SetText(linkified(m.m))
     f.text:SetTextColor(Theme:Color(m.k == "gm" and "bnet" or m.k == "warning" and "warning" or "text"))
 
     if not it.bubble then
