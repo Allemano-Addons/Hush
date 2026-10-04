@@ -148,6 +148,8 @@ local function onAutoReply(event, text, sender)
 end
 
 local function onSystem(_, text)
+    -- Secret text (instances, boss fights on WoW Forever) cannot be read: any string call on it errors.
+    if issecretvalue and issecretvalue(text) then return end
     text = text or ""
     local who = Compat.MatchPlayerNotFound(text)
     if who then

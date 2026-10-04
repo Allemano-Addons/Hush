@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.36 – 2026-10-04
+- Fix: a system message that the game hid as a secret text (in a fight or an instance on Forever) could cause a Lua error in the whisper window. It is now skipped when it cannot be read.
+
 ## 0.1.35 – 2026-10-01
 - **Status**: Available, Away, Busy, Raid and Combat, each with its own answer text. Pick it with the dot next to "Hush" in the window, the launcher menu, Settings → Status or `/hush status away` (`back` = Available).
 - Away, Busy and Raid set the game's own AFK / DND with your text, so the server answers every whisper – also in boss fights, where addons can't read chat. Where that flag is not on (Combat, Battle.net whispers, or the option off) Hush answers itself, marked `[Auto-reply]`, at most once per person every 5 minutes.
