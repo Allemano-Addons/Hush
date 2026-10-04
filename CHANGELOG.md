@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.37 – 2026-10-04
+- Fix: one person could have two conversations, one from Battle.net and one from whispering the character. When a Battle.net friend is playing a character you already have a whisper conversation with, the Battle.net messages now go into that conversation, and existing pairs are joined when the game starts and when a new message comes. A reply goes the way the last message came in (Battle.net or whisper).
+
 ## 0.1.36 – 2026-10-04
 - Fix: a system message that the game hid as a secret text (in a fight or an instance on Forever) could cause a Lua error in the whisper window. It is now skipped when it cannot be read.
 

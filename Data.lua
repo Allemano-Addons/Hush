@@ -310,6 +310,26 @@ local function mergeInto(dst, src)
     end
 end
 
+-- A Battle.net conversation and the character conversation of the same person become one: the Battle.net messages
+-- (marked v = "bn") are merged into the character's conversation, which remembers the BattleTag to answer through.
+function Data.LinkBNet(bKey, wKey, tag, bnID)
+    local convs = Hush.char.convs
+    local w = convs[wKey]
+    if not w then return end
+    w.bnTag = tag or w.bnTag
+    if bnID then w.bnID = bnID end
+    local b = convs[bKey]
+    if not b or bKey == wKey then return end
+    for _, m in ipairs(b.msgs) do m.v = "bn" end
+    mergeInto(w, b)
+    w.bnTag = tag or b.target or w.bnTag
+    w.bnID = bnID or b.bnID or w.bnID
+    convs[bKey] = nil
+    if Hush.char.lastWhisper == bKey then Hush.char.lastWhisper = wKey end
+    Hush:Fire("CONV_RENAMED", bKey, wKey)
+    Hush:Fire("UNREAD_CHANGED")
+end
+
 -- Move a conversation to newKey (merging if it exists) and use the server's spelling.
 function Data.Rekey(oldKey, newKey, name)
     local convs = Hush.char.convs

@@ -89,6 +89,10 @@ local function onWhisper(event, text, sender, _, _, _, flags, _, _, _, _, _, gui
     -- Unique id of the character: first names are not unique on WoW Forever (surnames).
     if guid and guid ~= "" then conv.guid = guid end
     if not created then Data.UpdateInfo(conv, info) end
+    conv.viaBN = false -- answered the way this message came in
+    -- A Battle.net conversation with the same person is joined with this one.
+    local tag = conv.bnTag or Compat.BNTagByCharacter(name)
+    if tag then Data.LinkBNet(Data.BNetKey(tag), key, tag) end
 
     Data.AddMessage(key, {
         d = incoming and "in" or "out",
@@ -104,11 +108,48 @@ local function onWhisper(event, text, sender, _, _, _, flags, _, _, _, _, _, gui
     end
 end
 
+-- The character conversation a Battle.net friend belongs to: the one of the character they are playing, when
+-- there is one. Returns its key, or nil (then the friend has a Battle.net conversation of their own).
+local function characterKeyOf(character)
+    if not character or character == "" then return nil end
+    local name = Compat.NormalizeName(character)
+    if not name then return nil end
+    local key = Data.WhisperKey(name)
+    return Data.Get(key) and key or nil
+end
+
+-- Joins the Battle.net conversations with the character conversations of the same people.
+local function linkBNetConversations()
+    for key, conv in pairs(Data.All()) do
+        if conv.kind == "bnet" and conv.target and not Data.IsForeign(key) then
+            local id = Compat.BNIDFromTag(conv.target)
+            local bn = id and Compat.BNInfo(id)
+            local wKey = bn and characterKeyOf(bn.character)
+            if wKey then Data.LinkBNet(key, wKey, conv.target, id) end
+        end
+    end
+end
+Chat.LinkBNet = linkBNetConversations
+
 local function onBNWhisper(event, text, _, _, _, _, _, _, _, _, _, _, _, bnID)
     local bn = Compat.BNInfo(bnID) or {}
     local tag = bn.tag or ("id" .. tostring(bnID))
     local key = Data.BNetKey(tag)
     local incoming = event == "CHAT_MSG_BN_WHISPER"
+
+    -- The friend is playing a character we already talk to: the same conversation.
+    local wKey = characterKeyOf(bn.character)
+    if wKey then
+        Data.LinkBNet(key, wKey, tag, bnID)
+        local conv = Data.Get(wKey)
+        conv.viaBN = true
+        Data.AddMessage(wKey, { d = incoming and "in" or "out", m = text, s = incoming and conv.display or nil, v = "bn" })
+        if incoming then
+            Hush.char.lastWhisper = wKey
+            if bn.name then Compat.SetLastTellTarget(bn.name, "BN_WHISPER") end
+        end
+        return
+    end
 
     local info = { class = bn.class, level = bn.level, zone = bn.zone, online = bn.online,
                    status = bn.status, character = bn.character }
@@ -229,6 +270,7 @@ Hush:RegisterEvent("PLAYER_LOGIN", function()
     end
 
     Compat.After(3, function() requestRoster(true) end)
+    Compat.After(5, function() linkBNetConversations() end)
 end)
 
 Hush:RegisterEvent("PLAYER_REGEN_DISABLED", function() Chat.inCombat = true end)

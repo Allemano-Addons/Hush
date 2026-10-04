@@ -204,6 +204,22 @@ function Compat.BNInfo(bnID)
     end
 end
 
+-- The BattleTag of the Battle.net friend who is playing the character `name`, or nil. The same person can write
+-- through Battle.net or as the character; Hush keeps one conversation for both.
+function Compat.BNTagByCharacter(name)
+    if not name or not BNGetNumFriends then return nil end
+    for i = 1, BNGetNumFriends() do
+        if C_BattleNet and C_BattleNet.GetFriendAccountInfo then
+            local a = C_BattleNet.GetFriendAccountInfo(i)
+            local g = a and a.gameAccountInfo
+            if g and g.characterName == name and a.battleTag then return a.battleTag end
+        elseif BNGetFriendInfo then
+            local _, _, battleTag, _, charName = BNGetFriendInfo(i)
+            if charName == name and battleTag then return battleTag end
+        end
+    end
+end
+
 -- Current session id (bnetAccountID) for a BattleTag, or nil if not a friend / offline list.
 function Compat.BNIDFromTag(tag)
     if not tag or not BNGetNumFriends then return nil end
@@ -233,6 +249,14 @@ end
 -- Send one part (<= 255 bytes) to a conversation. Returns false if it can't be delivered.
 function Compat.Send(conv, text)
     if conv.kind == "whisper" then
+        -- A conversation that also takes Battle.net whispers answers the way the last message came in.
+        if conv.viaBN and conv.bnTag then
+            local id = Compat.BNIDFromTag(conv.bnTag)
+            if id then
+                if C_BattleNet and C_BattleNet.SendWhisper then C_BattleNet.SendWhisper(id, text) else BNSendWhisper(id, text) end
+                return true
+            end
+        end
         sendChat(text, "WHISPER", conv.target)
         return true
     elseif conv.kind == "bnet" then
