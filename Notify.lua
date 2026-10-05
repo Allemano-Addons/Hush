@@ -85,6 +85,7 @@ end)
 
 Hush:RegisterCallback("MESSAGE_ADDED", function(_, key, msg, conv)
     if msg.d ~= "in" or conv.kind == "group" then return end
+    if Hush.Data.IsMuted(conv) then return end -- muted: no sound and no combat toast
     if Compat.InCombat() then
         combat.count = combat.count + 1
         combat.lastKey = key

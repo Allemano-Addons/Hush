@@ -639,6 +639,55 @@ function Data.SplitMessage(text)
 end
 
 -- ---------------------------------------------------------------------------
+-- Mute: a conversation that keeps arriving but makes no noise (no sound, popup, toast, auto-reply or badge).
+-- Not the game's /ignore: the person is not blocked and nothing is lost. conv.mute = true (until unmuted) or the time
+-- (an epoch number) when it ends.
+-- ---------------------------------------------------------------------------
+
+function Data.IsMuted(conv)
+    local m = conv and conv.mute
+    if m == true then return true end
+    return type(m) == "number" and m > time()
+end
+
+-- Seconds left of a timed mute, or nil (not muted, or muted until unmuted).
+function Data.MuteLeft(conv)
+    local m = conv and conv.mute
+    if type(m) == "number" and m > time() then return m - time() end
+end
+
+-- Clears the mutes that have run out and tells the windows. Returns how many.
+function Data.ExpireMutes()
+    local count = 0
+    for _, conv in pairs(Data.All()) do
+        if type(conv.mute) == "number" and conv.mute <= time() then
+            conv.mute = nil
+            count = count + 1
+            Hush:Fire("CONV_UPDATED", conv)
+        end
+    end
+    if count > 0 then Hush:Fire("UNREAD_CHANGED") end
+    return count
+end
+
+-- seconds = how long, true = until unmuted, nil = unmute.
+function Data.SetMute(key, seconds)
+    local conv = Data.Get(key)
+    if not conv then return false end
+    if seconds == nil then
+        conv.mute = nil
+    elseif seconds == true then
+        conv.mute = true
+    else
+        conv.mute = time() + seconds
+        Hush.Compat.After(seconds + 1, Data.ExpireMutes)
+    end
+    Hush:Fire("CONV_UPDATED", conv)
+    Hush:Fire("UNREAD_CHANGED")
+    return true
+end
+
+-- ---------------------------------------------------------------------------
 -- Unread totals
 -- ---------------------------------------------------------------------------
 
@@ -647,7 +696,7 @@ function Data.UnreadTotals()
     local byTab = { whispers = 0, requests = 0, groups = 0 }
     local total = 0
     for _, conv in pairs(Data.All()) do
-        if conv.unread > 0 then
+        if conv.unread > 0 and not Data.IsMuted(conv) then
             local tab = Data.TabOf(conv)
             byTab[tab] = byTab[tab] + conv.unread
             total = total + conv.unread

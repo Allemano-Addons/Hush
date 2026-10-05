@@ -340,10 +340,19 @@ local function fillRow(r, it)
     r.plainDot:SetShown(dr ~= nil and not portraits)
 
     r.time:SetText(List.FormatTime(conv.last))
-    r.preview:SetText(conv.preview ~= "" and conv.preview or " ")
-    r.badge:SetCount(conv.unread)
+    -- A draft you have not sent, or a mute, is told before the preview.
+    local draft = Hush.Input and Hush.Input.GetDraft and Hush.Input.GetDraft(it.key)
+    local muted = Hush.Data.IsMuted(conv)
+    local preview = conv.preview ~= "" and conv.preview or " "
+    if draft and draft ~= "" then
+        preview = "|cffE6A93CDraft:|r " .. (draft:gsub("[\r\n]+", " "))
+    elseif muted then
+        preview = "|cff8A929CMuted|r  " .. preview
+    end
+    r.preview:SetText(preview)
+    r.badge:SetCount(muted and 0 or conv.unread)
     -- Unread chats: brighter preview.
-    r.preview:SetTextColor(Theme:Color(conv.unread > 0 and "text" or "textDim"))
+    r.preview:SetTextColor(Theme:Color((conv.unread > 0 and not muted) and "text" or "textDim"))
 end
 
 local function createCat()

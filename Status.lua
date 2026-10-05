@@ -146,6 +146,7 @@ function Status.Refresh() apply(false) end
 Hush:RegisterCallback("MESSAGE_ADDED", function(_, key, msg, conv)
     if not msg or msg.d ~= "in" or not conv or msg.k == "gm" then return end
     if conv.kind ~= "whisper" and conv.kind ~= "bnet" then return end
+    if Hush.Data and Hush.Data.IsMuted(conv) then return end -- no auto-reply to somebody who is muted
     local s = Hush.settings
     if not s or not s.statusHushReply then return end
     local id = Status.Effective()

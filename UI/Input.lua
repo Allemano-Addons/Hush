@@ -70,6 +70,44 @@ local function sendFromField()
     end
 end
 
+-- Unsent text is kept for every conversation, in the saved data of this character, so it survives a /reload and a
+-- logout. It is written as you type (an empty field forgets it).
+local MAX_DRAFTS = 60
+local function drafts()
+    if not Hush.char then return {} end
+    Hush.char.drafts = Hush.char.drafts or {}
+    return Hush.char.drafts
+end
+
+-- The unsent text of a conversation, or nil.
+function Input.GetDraft(key)
+    local d = Hush.char and Hush.char.drafts
+    return d and d[key] or nil
+end
+
+local draftKey -- the conversation the field belongs to
+local settingText = false -- true while the field is filled by Hush, so that is not taken for typing
+
+-- `force`: tell the list even when only the text changed (when leaving the conversation); while typing, only a draft that
+-- appears or disappears is told, so the list is not redrawn on every key.
+local function storeDraft(key, force)
+    if not key or Data.IsForeign(key) then return end
+    local d = drafts()
+    local text = edit:GetText() or ""
+    local before = d[key]
+    d[key] = text ~= "" and text or nil
+    if before ~= d[key] then
+        local stateChanged = (before == nil) ~= (d[key] == nil)
+        local count = 0
+        for _ in pairs(d) do count = count + 1 end
+        if count > MAX_DRAFTS then
+            for k in pairs(d) do if k ~= key then d[k] = nil break end end -- the oldest is not known: drop another one
+        end
+        local conv = Data.Get(key)
+        if conv and (force or stateChanged) then Hush:Fire("CONV_UPDATED", conv) end -- the list shows "Draft:"
+    end
+end
+
 local function updateCounter()
     local n = #Data.SplitMessage(edit:GetText())
     counter:SetText(n > 1 and (n .. " messages") or "")
@@ -157,7 +195,10 @@ local function build()
     edit:SetPoint("BOTTOMRIGHT", sendBtn, "BOTTOMLEFT", -8, 0)
     edit:SetMaxLetters(2000)
     edit:SetScript("OnEnterPressed", sendFromField)
-    edit:HookScript("OnTextChanged", updateCounter)
+    edit:HookScript("OnTextChanged", function()
+        updateCounter()
+        if not settingText and draftKey then storeDraft(draftKey) end
+    end)
 
     counter = W.Text(footer, "regular", -2, "textFaint")
     counter:SetPoint("BOTTOMRIGHT", edit, "TOPRIGHT", 0, 3)
@@ -275,6 +316,18 @@ function Input.StartConversation(name, draft)
     edit:SetFocus()
 end
 
+-- Puts text in the field as a draft (never sent): only when the field is empty. Used by header buttons.
+function Input.PutDraft(text)
+    if not edit or not footer:IsShown() then return false end
+    if (edit:GetText() or "") ~= "" then
+        Hush:Print("The message field is not empty: send or clear what is in it first.")
+        return false
+    end
+    putDraft(text)
+    edit:SetFocus()
+    return true
+end
+
 function Input.Focus()
     if edit and footer:IsShown() then edit:SetFocus() end
 end
@@ -296,19 +349,14 @@ Hush:RegisterCallback("WINDOW_BUILT", function()
     end)
 end, "Input")
 
--- Unsent text is kept per conversation while switching (for this session).
-local drafts = {}
-local draftKey
-
+-- Unsent text follows the conversation: switching saves the field and loads the other one.
 Hush:RegisterCallback("CONV_OPENED", function(_, key, conv)
     if key ~= draftKey then
-        if draftKey then
-            local text = edit:GetText() or ""
-            drafts[draftKey] = text ~= "" and text or nil
-        end
+        if draftKey then storeDraft(draftKey, true) end
         draftKey = key
-        edit:SetText(drafts[key] or "")
-        drafts[key] = nil
+        settingText = true
+        edit:SetText(Input.GetDraft(key) or "")
+        settingText = false
         updateCounter()
     end
     if compose then compose:Hide() end
@@ -347,15 +395,20 @@ end, "Input")
 
 Hush:RegisterCallback("CONV_RENAMED", function(_, oldKey, newKey)
     if draftKey == oldKey then draftKey = newKey end
-    if drafts[oldKey] then drafts[newKey], drafts[oldKey] = drafts[oldKey], nil end
+    local d = Hush.char and Hush.char.drafts
+    if d and d[oldKey] then d[newKey], d[oldKey] = d[oldKey], nil end
 end, "Input")
 
 -- Conversation.lua closes the view first when the open conversation is deleted.
-Hush:RegisterCallback("CONV_DELETED", function()
+Hush:RegisterCallback("CONV_DELETED", function(_, key)
+    local d = Hush.char and Hush.char.drafts
+    if d and key then d[key] = nil end -- a deleted chat leaves no draft behind
     if footer and Hush.Conversation.Current() == nil then
         footer:Hide()
         footer:SetHeight(1)
+        settingText = true
         edit:SetText("")
+        settingText = false
         draftKey = nil
     end
 end, "Input")

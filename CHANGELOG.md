@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.38 – 2026-10-05
+- **Mute.** Make a chat quiet without blocking the person: Mute in the header (next to the "..."), in the right-click menu of a chat, or /hush mute <name> [minutes] and /hush unmute <name>. For 10 minutes, 30 minutes, 1 hour, 8 hours or until you unmute. A muted chat still arrives and is kept, but it plays no sound, shows no popup or combat toast, gets no auto-reply and adds nothing to the unread badge. The header shows "Muted 9 min" counting down, the list says "Muted", and a timed mute ends by itself, also if the game was closed meanwhile.
+- **Drafts survive a /reload.** What you have typed but not sent is kept for every chat, also across logout, and the list shows "Draft:" before it.
+- **Two buttons in the header of a chat:** **Invite** (invite the player to your group) and **Get Hush** (puts a short message about Hush in the input as a draft, which you read and send yourself).
+
 ## 0.1.37 – 2026-10-04
 - Fix: one person could have two conversations, one from Battle.net and one from whispering the character. When a Battle.net friend is playing a character you already have a whisper conversation with, the Battle.net messages now go into that conversation, and existing pairs are joined when the game starts and when a new message comes. A reply goes the way the last message came in (Battle.net or whisper).
 

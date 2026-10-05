@@ -20,6 +20,9 @@ Outside combat, whispers are hidden in the default chat frame so your general ch
 ### Tools for every conversation
 Right-click a chat or a single message for: move, pin, invite to group, guild invite, **save message** and copy text.
 
+- **Mute without blocking:** make a chat quiet for 10 minutes, an hour, 8 hours or until you unmute it. It still arrives and is kept, but plays no sound, shows no popup and adds nothing to the unread badge. Not the game's /ignore.
+- **Drafts survive a /reload:** what you typed but did not send is kept for every chat, and the list shows "Draft:" before it.
+- **Header buttons:** Invite the player to your group, or tell them about Hush with one click (a short message is put in the input for you to read and send).
 - **Saved tab:** messages you saved stay there even if you delete the conversation. Good for addresses, prices and instructions.
 - **Quick replies** you can set up in the settings.
 - **Alts:** the character selector under the title lets you read your other characters' conversations, or search **all characters** at once.
@@ -39,6 +42,7 @@ Other addons can hook in as well (a small API is documented in the source), for 
 - `/hush` open or close, `/hush settings` settings
 - `/hush filter` toggle hiding whispers in the default chat
 - `/hush launcher` show the launcher button again, `/hush reset` reset window position and size
+- `/hush mute <name> [minutes]` and `/hush unmute <name>` quiet a chat without blocking it
 - `/hush report` copy diagnostics for a bug report
 
 ## Installing manually (WoW Forever)

@@ -29,6 +29,7 @@ Pure Lua, no libraries.
 | `/hush filter` | Toggle hiding whispers in the default chat |
 | `/hush launcher` | Show the launcher button again |
 | `/hush reset` | Reset window position and size |
+| `/hush mute <name> [minutes]` | Quiet a chat without blocking it (`/hush unmute <name>` undoes it) |
 | `/hush report` | Copy diagnostics for a bug report (also Settings > General) |
 | `/hush debug` | Diagnostics in the chat |
 

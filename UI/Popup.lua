@@ -378,6 +378,7 @@ local function wanted(key, conv)
         return false
     end
     if conv.request and not s.popupRequests then return false end
+    if Hush.Data.IsMuted(conv) then return false end -- muted: no popup
     -- Already reading it in Hush.
     if Hush.Main.IsShown() and Hush.Conversation.Current() == key then return false end
     return true
